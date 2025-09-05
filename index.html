@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>股見 - 台灣股市洞察</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              'brand-blue': '#4f46e5',   // Indigo 600
+              'brand-gold': '#f59e0b',   // Amber 500
+              'dark-bg': '#121212',
+              'dark-card': '#1e1e1e',
+              'dark-border': '#2f2f2f',
+              'positive': '#ef4444',     // Red 500 (Up in TWSE)
+              'negative': '#22c55e',     // Green 500 (Down in TWSE)
+              'neutral': '#737373',      // Zinc 500
+              'text-primary': '#f5f5f5', // Neutral 100
+              'text-secondary': '#a3a3a3', // Neutral 400
+              'text-tertiary': '#525252', // Neutral 600
+            },
+            keyframes: {
+              'fade-in': {
+                '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              'backdrop-fade-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              'pop-in': {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+               'glow-positive': {
+                '0%, 100%': { boxShadow: '0 0 8px rgba(239, 68, 68, 0)' },
+                '50%': { boxShadow: '0 0 12px rgba(239, 68, 68, 0.5)' },
+              },
+              'glow-negative': {
+                '0%, 100%': { boxShadow: '0 0 8px rgba(34, 197, 94, 0)' },
+                '50%': { boxShadow: '0 0 12px rgba(34, 197, 94, 0.5)' },
+              },
+              'staggered-fade-in': {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'fade-in': 'fade-in 0.5s ease-out forwards',
+              'backdrop-fade-in': 'backdrop-fade-in 0.3s ease-out',
+              'pop-in': 'pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+              'glow-positive': 'glow-positive 2s ease-in-out infinite',
+              'glow-negative': 'glow-negative 2s ease-in-out infinite',
+              'staggered-fade-in': 'staggered-fade-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-dark-bg text-text-primary font-sans">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
