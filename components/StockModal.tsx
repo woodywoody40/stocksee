@@ -7,6 +7,7 @@ import { getAIStockInsight } from '../services/geminiService';
 interface StockModalProps {
     stock: Stock;
     onClose: () => void;
+    onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
 
 const TrendUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -49,7 +50,7 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
     </div>
 );
 
-const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
+const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
@@ -93,6 +94,11 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
 
         fetchInsight();
     }, [stock, apiKey]);
+    
+    const handleDeepAnalysisClick = () => {
+        onStartAnalysis(stock.name, stock.code);
+        onClose();
+    };
 
     return (
         <div 
@@ -106,7 +112,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
                 className="bg-dark-card/80 backdrop-blur-xl rounded-2xl border border-dark-border shadow-2xl w-full max-w-md transform animate-pop-in overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="max-h-[90vh] overflow-y-auto p-6 relative">
+                 <div className="p-6 pb-0">
                     <button 
                         onClick={onClose} 
                         className="absolute top-4 right-4 text-text-secondary hover:text-text-primary bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue z-20"
@@ -137,7 +143,9 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
                     <div className="h-20 mb-6 -mt-4">
                         <Sparkline data={priceData} />
                     </div>
+                </div>
 
+                <div className="max-h-[calc(90vh-320px)] overflow-y-auto px-6 pb-6">
                     <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
@@ -157,6 +165,16 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
                            {aiInsight && <p className="text-text-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
                         </div>
                     </div>
+                </div>
+
+                <div className="p-6 pt-4 bg-black/20 border-t border-dark-border">
+                     <button
+                        onClick={handleDeepAnalysisClick}
+                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-not-allowed transform hover:scale-105"
+                    >
+                        <SparklesIcon className="w-5 h-5" />
+                        一鍵深度洞察
+                    </button>
                 </div>
             </div>
         </div>

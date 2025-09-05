@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { analyzeNews } from '../services/geminiService';
 import { AnalysisResult } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -25,24 +25,37 @@ const icons = {
   Unchanged: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-neutral" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" /></svg>,
 };
 
+interface AiAnalysisViewProps {
+    analysisTarget: string | null;
+    isFetchingNews: boolean;
+    initialContent: string | null;
+}
 
-const AiAnalysisView: React.FC = () => {
+const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent }) => {
     const [newsText, setNewsText] = useState('');
     const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const handleAnalyze = async () => {
-        if (!newsText.trim() || !apiKey.trim()) {
-            setError('請貼上新聞文章內容並輸入您的 API 金鑰。');
+    const analysisTriggeredForContent = useRef<string | null>(null);
+
+    const handleAnalyze = useCallback(async (contentToAnalyze?: string) => {
+        const text = contentToAnalyze || newsText;
+        if (!text.trim()) {
+            setError('請先貼上或等待新聞內容載入。');
             return;
         }
+        if (!apiKey.trim()) {
+            setError('請輸入您的 API 金鑰以進行分析。');
+            return;
+        }
+        
         setIsLoading(true);
         setError(null);
         setResult(null);
         try {
-            const analysisResult = await analyzeNews(newsText, apiKey);
+            const analysisResult = await analyzeNews(text, apiKey);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
@@ -53,7 +66,42 @@ const AiAnalysisView: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [apiKey, newsText]);
+
+    useEffect(() => {
+        setResult(null);
+        setNewsText('');
+        setError(null);
+        analysisTriggeredForContent.current = null;
+    }, [analysisTarget]);
+
+    useEffect(() => {
+        if (initialContent && initialContent !== analysisTriggeredForContent.current) {
+            analysisTriggeredForContent.current = initialContent; // Mark as processed
+            
+            if (initialContent.startsWith('//ERROR//')) {
+                setError(`自動獲取新聞失敗: ${initialContent.replace('//ERROR// ', '')}`);
+                setNewsText(''); // Clear text area on error
+            } else {
+                setNewsText(initialContent);
+                if (apiKey) {
+                    handleAnalyze(initialContent);
+                }
+            }
+        }
+    }, [initialContent, apiKey, handleAnalyze]);
+
+    if (isFetchingNews) {
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-dark-border shadow-2xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
+                     <LoadingIcon className="h-8 w-8 text-brand-gold"/>
+                     <h3 className="text-lg font-semibold text-text-primary">正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
+                     <p className="text-text-secondary text-sm">請稍候，AI 智慧獵取中。</p>
+                </div>
+            </div>
+        );
+    }
     
     return (
         <div className="max-w-4xl mx-auto">
@@ -61,7 +109,12 @@ const AiAnalysisView: React.FC = () => {
                  <div className="flex justify-between items-start mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-brand-gold">AI 新聞分析</h2>
-                        <p className="text-text-secondary mt-1">貼上股票相關新聞，讓 AI 為您提煉重點、分析情緒與預測潛在走勢。</p>
+                        <p className="text-text-secondary mt-1">
+                          {analysisTarget 
+                            ? `已自動帶入關於「${analysisTarget}」的最新聞，您也可手動修改內容。`
+                            : "貼上股票相關新聞，讓 AI 為您提煉重點、分析情緒與預測潛在走勢。"
+                          }
+                        </p>
                     </div>
                 </div>
                 
@@ -97,12 +150,16 @@ const AiAnalysisView: React.FC = () => {
                     <textarea
                         value={newsText}
                         onChange={(e) => setNewsText(e.target.value)}
-                        placeholder="在此貼上新聞文章全文..."
+                        placeholder={
+                          analysisTarget
+                            ? `在此貼上或編輯關於「${analysisTarget}」的新聞文章全文...`
+                            : "在此貼上新聞文章全文..."
+                        }
                         className="w-full h-48 p-4 bg-black/30 border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition resize-y"
                         disabled={isLoading}
                     />
                     <button
-                        onClick={handleAnalyze}
+                        onClick={() => handleAnalyze()}
                         disabled={isLoading || !newsText.trim() || !apiKey.trim()}
                         className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
                     >
