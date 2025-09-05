@@ -9,9 +9,9 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen bg-dark-bg font-sans"
+      className="min-h-screen bg-dark-bg font-sans bg-[length:200%_200%] animate-aurora"
       style={{
-        backgroundImage: 'radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 30%), radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.08), transparent 30%)'
+        backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 35%), radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 35%), radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 35%)'
       }}
     >
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -19,7 +19,7 @@ const App: React.FC = () => {
         {activeTab === Tab.Market && <MarketView />}
         {activeTab === Tab.AI_Analysis && <AiAnalysisView />}
       </main>
-       <footer className="text-center p-4 text-xs text-gray-500 border-t border-dark-border mt-8">
+       <footer className="text-center p-6 text-xs text-text-secondary border-t border-dark-border mt-8">
         股見 - 台灣股市洞察 © 2024. All data is for informational purposes only.
       </footer>
     </div>

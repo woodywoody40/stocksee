@@ -1,6 +1,6 @@
 import { Stock } from '../types';
 
-// Interface for the structure of a single stock object from the TWSE API response
+// Interface for the structure of a single stock object from the TWSE getStockInfo API response
 interface TwseStock {
     c: string; // code
     n: string; // name

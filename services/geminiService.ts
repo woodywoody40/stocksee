@@ -66,3 +66,44 @@ ${newsText}
         throw new Error("AI 分析時發生未知錯誤。");
     }
 };
+
+/**
+ * Generates a real-time AI insight summary for a specific stock.
+ * @param stockName - The name of the stock.
+ * @param stockCode - The code of the stock.
+ * @param apiKey - The user's Google Gemini API key.
+ * @returns A promise that resolves to a string containing the AI-generated insight.
+ */
+export const getAIStockInsight = async (stockName: string, stockCode: string, apiKey: string): Promise<string> => {
+    if (!apiKey) {
+        throw new Error("API 金鑰未提供。");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `你是一位頂尖的台灣股市分析師。請針對股票「${stockName} (${stockCode})」，提供一份簡潔、中立、專業的即時市場洞察。
+    
+    內容需包含：
+    1.  **近期概況**: 總結最近影響該股票的關鍵新聞或市場情緒（約 2-3 句話）。
+    2.  **潛在動能**: 根據近期事件，點出一個主要的潛在利多或利空因素。
+    
+    請以專業、客觀的語氣，用繁體中文回覆，總長度控制在 150 字以內。`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                temperature: 0.3,
+            },
+        });
+        
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error getting stock insight with Gemini API:", error);
+        if (error instanceof Error && error.message.includes('API key not valid')) {
+            throw new Error('您的 API 金鑰無效或已過期。');
+        }
+        throw new Error("無法生成 AI 洞察，請稍後再試。");
+    }
+};
