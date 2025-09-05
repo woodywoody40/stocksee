@@ -1,7 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from '../types';
 
-// FIX: Removed `required` property from the schema as it is not a supported property for `responseSchema` in the Gemini API.
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -22,11 +21,11 @@ const ANALYSIS_SCHEMA = {
 
 
 export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
-    // FIX: Adhere to the API key guideline by using process.env.API_KEY. This resolves the TypeScript error with import.meta.env.
+    // FIX: Use `process.env.API_KEY` to get the API key as per coding guidelines, which also resolves the TypeScript error for 'import.meta.env'.
     const apiKey = process.env.API_KEY;
 
     if (!apiKey) {
-        // FIX: Updated error message to reference the correct environment variable API_KEY.
+        // FIX: Update error message to refer to the correct environment variable.
         throw new Error("AI 服務因設定問題暫時無法使用，請確認環境變數 API_KEY 已正確設定。");
     }
     
