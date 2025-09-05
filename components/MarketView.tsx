@@ -24,9 +24,10 @@ const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
 interface MarketViewProps {
     onStartAnalysis: (stockName: string, stockCode: string) => void;
+    apiKey: string;
 }
 
-const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
+const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -39,32 +40,64 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
         return Array.from(combined);
     }, [watchlist, searchCodes]);
 
-    const fetchData = useCallback(async () => {
-        if (codesToFetch.length === 0) {
-            setStocks([]);
-            if (!searchCodes.length) setIsLoading(false);
-            return;
-        }
-        
-        if(stocks.length === 0 && !searchCodes.length) setIsLoading(true);
-        setError(null);
-        try {
-            const data = await fetchStockData(codesToFetch);
-            const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
-            setStocks(sortedData);
-        } catch (err) {
-            setError('無法獲取股票資料，請稍後再試。');
-            console.error(err);
-        } finally {
-            if (!searchCodes.length) setIsLoading(false);
-        }
-    }, [codesToFetch, stocks.length, searchCodes.length]);
-    
+    // Effect for user-driven data fetching (initial load, search, watchlist changes)
     useEffect(() => {
-        fetchData();
-        const intervalId = setInterval(fetchData, REFRESH_INTERVAL);
+        let isCancelled = false;
+        const loadData = async () => {
+            setIsLoading(true);
+            setError(null);
+
+            if (codesToFetch.length === 0) {
+                setStocks([]);
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const data = await fetchStockData(codesToFetch);
+                if (!isCancelled) {
+                    const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
+                    setStocks(sortedData);
+                }
+            } catch (err) {
+                if (!isCancelled) {
+                    setError('無法獲取股票資料，請稍後再試。');
+                    console.error(err);
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadData();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [codesToFetch]);
+
+    // Effect for background refresh interval
+    useEffect(() => {
+        const intervalId = setInterval(async () => {
+            if (codesToFetch.length === 0 || document.hidden) return;
+            try {
+                const data = await fetchStockData(codesToFetch);
+                const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
+                setStocks(currentStocks => {
+                    // Create a map of new stocks for efficient lookup
+                    const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
+                    // Update existing stocks or keep them if they weren't in the new fetch
+                    return currentStocks.map(oldStock => newStocksMap.get(oldStock.code) || oldStock);
+                });
+            } catch (err) {
+                console.error("Background refresh failed:", err);
+            }
+        }, REFRESH_INTERVAL);
+
         return () => clearInterval(intervalId);
-    }, [fetchData]);
+    }, [codesToFetch]);
 
 
     const toggleWatchlist = (code: string) => {
@@ -74,12 +107,11 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
     };
 
     const handleSearch = (codes: string[]) => {
-        setIsLoading(true); // Show loader immediately for search
         setSearchCodes(codes);
     };
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
-    const marketStocks = stocks.filter(stock => !watchlist.includes(stock.code) && DEFAULT_STOCKS.includes(stock.code) && !searchCodes.length);
+    const marketStocks = stocks.filter(stock => !watchlist.includes(stock.code) && DEFAULT_STOCKS.includes(stock.code));
     const searchResultStocks = searchCodes.length > 0 ? stocks.filter(stock => searchCodes.includes(stock.code)) : [];
 
     const renderStockGrid = (stockList: Stock[]) => (
@@ -140,6 +172,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
                   stock={selectedStock} 
                   onClose={() => setSelectedStock(null)}
                   onStartAnalysis={onStartAnalysis}
+                  apiKey={apiKey}
                 />
             )}
         </div>

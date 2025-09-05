@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { analyzeNews } from '../services/geminiService';
 import { AnalysisResult } from '../types';
-import useLocalStorage from '../hooks/useLocalStorage';
 
 const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
@@ -29,16 +28,26 @@ interface AiAnalysisViewProps {
     analysisTarget: string | null;
     isFetchingNews: boolean;
     initialContent: string | null;
+    apiKey: string;
+    setApiKey: (key: string) => void;
 }
 
-const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent }) => {
+const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent, apiKey, setApiKey }) => {
     const [newsText, setNewsText] = useState('');
-    const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const [localApiKey, setLocalApiKey] = useState(apiKey);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+
     const analysisTriggeredForContent = useRef<string | null>(null);
+
+    const handleSaveApiKey = () => {
+        setApiKey(localApiKey);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+    };
 
     const handleAnalyze = useCallback(async (contentToAnalyze?: string) => {
         const text = contentToAnalyze || newsText;
@@ -47,7 +56,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
             return;
         }
         if (!apiKey.trim()) {
-            setError('請輸入您的 API 金鑰以進行分析。');
+            setError('請儲存您的 API 金鑰以進行分析。');
             return;
         }
         
@@ -96,8 +105,8 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
             <div className="max-w-4xl mx-auto">
                 <div className="bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-dark-border shadow-2xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
                      <LoadingIcon className="h-8 w-8 text-brand-gold"/>
-                     <h3 className="text-lg font-semibold text-text-primary">正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
-                     <p className="text-text-secondary text-sm">請稍候，AI 智慧獵取中。</p>
+                     <h3 className="text-lg font-semibold text-text-primary">AI 正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
+                     <p className="text-text-secondary text-sm">請稍候，過程可能需要一點時間。</p>
                 </div>
             </div>
         );
@@ -129,7 +138,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-dark-card/95 backdrop-blur-xl border border-dark-border rounded-lg text-xs text-text-secondary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 transform">
                                     <p className="font-semibold text-text-primary mb-1">什麼是 API 金鑰？</p>
                                     <p>API 金鑰是您用來存取 Google AI 服務的專屬密碼。本應用需要它來驅動 AI 分析功能。</p>
-                                    <p className="mt-2">您的金鑰將安全地儲存在瀏覽器中，不會上傳至任何伺服器。</p>
+                                    <p className="mt-2">您的金鑰將安全地儲存在瀏覽器中，不會上傳至任何伺-服器。</p>
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-blue/90 hover:underline mt-2 block font-semibold">
                                         點此免費取得金鑰 &rarr;
                                     </a>
@@ -137,15 +146,31 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                                 </div>
                             </div>
                         </div>
-                        <input
-                            id="api-key-input"
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="在此輸入您的 API 金鑰"
-                            className="w-full p-3 bg-black/30 border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition"
-                            disabled={isLoading}
-                        />
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="api-key-input"
+                                type="password"
+                                value={localApiKey}
+                                onChange={(e) => {
+                                    setLocalApiKey(e.target.value);
+                                    setSaveStatus('idle'); // Reset save status on change
+                                }}
+                                placeholder="在此輸入您的 API 金鑰"
+                                className="flex-grow p-3 bg-black/30 border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition"
+                                disabled={isLoading}
+                            />
+                            <button
+                                onClick={handleSaveApiKey}
+                                disabled={localApiKey === apiKey || isLoading}
+                                className={`px-5 py-3 font-semibold rounded-lg transition-all duration-300 text-sm ${
+                                    saveStatus === 'saved'
+                                        ? 'bg-green-600/80 text-white cursor-default'
+                                        : 'bg-brand-blue hover:bg-brand-blue/80 text-white disabled:bg-text-tertiary disabled:cursor-not-allowed'
+                                }`}
+                            >
+                                {saveStatus === 'saved' ? '已儲存 ✓' : '儲存'}
+                            </button>
+                        </div>
                     </div>
                     <textarea
                         value={newsText}

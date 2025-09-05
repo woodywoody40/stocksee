@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Stock } from '../types';
 import Sparkline from './Sparkline';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { getAIStockInsight } from '../services/geminiService';
 
 interface StockModalProps {
     stock: Stock;
     onClose: () => void;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
+    apiKey: string;
 }
 
 const TrendUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -34,11 +34,11 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const LoadingSpinner: React.FC = () => (
-    <div className="flex justify-center items-center p-4 space-x-2">
-        <div className="w-2 h-2 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
-        <div className="w-2 h-2 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-        <div className="w-2 h-2 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
+    <div className={`flex justify-center items-center space-x-2 ${small ? 'p-0' : 'p-4'}`}>
+        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
@@ -50,15 +50,16 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
     </div>
 );
 
-const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis }) => {
+const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis, apiKey }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
     
-    const [apiKey] = useLocalStorage<string>('gemini-api-key', '');
     const [aiInsight, setAiInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
     const [insightError, setInsightError] = useState<string | null>(null);
+    const [showApiError, setShowApiError] = useState(false);
+    const [isButtonLoading, setIsButtonLoading] = useState(false);
 
     useEffect(() => {
         const fetchInsight = async () => {
@@ -96,6 +97,12 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
     }, [stock, apiKey]);
     
     const handleDeepAnalysisClick = () => {
+        if (!apiKey) {
+            setShowApiError(true);
+            return;
+        }
+        setShowApiError(false);
+        setIsButtonLoading(true);
         onStartAnalysis(stock.name, stock.code);
         onClose();
     };
@@ -170,11 +177,21 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                 <div className="p-6 pt-4 bg-black/20 border-t border-dark-border">
                      <button
                         onClick={handleDeepAnalysisClick}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-not-allowed transform hover:scale-105"
+                        disabled={isButtonLoading}
+                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-wait transform hover:scale-105"
                     >
-                        <SparklesIcon className="w-5 h-5" />
+                        {isButtonLoading ? (
+                           <LoadingSpinner small={true} />
+                        ) : (
+                           <SparklesIcon className="w-5 h-5" />
+                        )}
                         一鍵深度洞察
                     </button>
+                    {showApiError && (
+                        <p className="text-xs text-positive text-center mt-2 animate-fade-in">
+                            請先至「AI 新聞分析」頁面設定 API 金鑰。
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

@@ -14,11 +14,8 @@ function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dispatch<R
 
   useEffect(() => {
     try {
-      const valueToStore =
-        typeof storedValue === 'function'
-          ? storedValue(storedValue)
-          : storedValue;
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+       // Directly store the value. React's state update logic ensures `storedValue` is the new state, not a function.
+       window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
       console.error(error);
     }

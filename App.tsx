@@ -3,13 +3,16 @@ import Header from './components/Header';
 import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
 import { Tab } from './types';
-import { fetchFirstNewsArticle } from './services/newsService';
+import { fetchNewsWithGemini } from './services/geminiService';
+import useLocalStorage from './hooks/useLocalStorage';
+
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Market);
   const [analysisTarget, setAnalysisTarget] = useState<string | null>(null);
   const [analysisContent, setAnalysisContent] = useState<string | null>(null);
   const [isFetchingNews, setIsFetchingNews] = useState(false);
+  const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
 
   const handleTabChange = (tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
@@ -20,22 +23,29 @@ const App: React.FC = () => {
   }
 
   const handleStartAnalysis = async (stockName: string, stockCode: string) => {
-    // Switch tab immediately for a better user experience
     setAnalysisTarget(stockName);
     setActiveTab(Tab.AI_Analysis);
-    
-    // Start fetching news in the background
     setIsFetchingNews(true);
-    setAnalysisContent(null); // Clear previous content
+    setAnalysisContent(null);
+
+    if (!apiKey) {
+      setAnalysisContent(`//ERROR// 請先在此頁面設定您的 Google Gemini API 金鑰。`);
+      setIsFetchingNews(false);
+      return;
+    }
 
     try {
-      // Add more specific search terms for better results
-      const articleText = await fetchFirstNewsArticle(`"${stockName}" "${stockCode}" 公司 OR 財經 OR 股價`);
-      setAnalysisContent(articleText);
+      const articleText = await fetchNewsWithGemini(stockName, stockCode, apiKey);
+      
+      if (articleText.includes('//NO_NEWS_FOUND//')) {
+        setAnalysisContent(`//ERROR// AI 找不到關於「${stockName}」的即時新聞。`);
+      } else {
+        setAnalysisContent(articleText);
+      }
+
     } catch (error) {
-      console.error("Failed to fetch and process news:", error);
+      console.error("Failed to fetch news via Gemini:", error);
       const errorMessage = error instanceof Error ? error.message : '未知的錯誤';
-      // Pass a special string to the child component to indicate an error
       setAnalysisContent(`//ERROR// ${errorMessage}`);
     } finally {
       setIsFetchingNews(false);
@@ -52,12 +62,14 @@ const App: React.FC = () => {
     >
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
-        {activeTab === Tab.Market && <MarketView onStartAnalysis={handleStartAnalysis} />}
+        {activeTab === Tab.Market && <MarketView onStartAnalysis={handleStartAnalysis} apiKey={apiKey} />}
         {activeTab === Tab.AI_Analysis && (
           <AiAnalysisView 
             analysisTarget={analysisTarget} 
             isFetchingNews={isFetchingNews}
             initialContent={analysisContent}
+            apiKey={apiKey}
+            setApiKey={setApiKey}
           />
         )}
       </main>

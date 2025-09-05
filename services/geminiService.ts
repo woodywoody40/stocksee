@@ -68,6 +68,42 @@ ${newsText}
 };
 
 /**
+ * Uses the Gemini API to find and return the text of a recent news article for a given stock.
+ * @param stockName The name of the stock.
+ * @param stockCode The code of the stock.
+ * @param apiKey The user's Google Gemini API key.
+ * @returns A promise that resolves to the full text of the news article.
+ */
+export const fetchNewsWithGemini = async (stockName: string, stockCode: string, apiKey: string): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `你是一位頂尖的財經新聞專家。請使用你的網路搜尋能力，找出關於台灣股票「${stockName} (${stockCode})」今天或近期最重要的一篇財經新聞。
+
+找到後，請以客觀中立的語氣，「摘要」這篇新聞的「核心內容」。你的回覆應該只包含新聞摘要本身，不要有任何前言或評論。
+
+如果找不到任何相關的即時新聞，請只回覆 '//NO_NEWS_FOUND//' 這段文字。`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                tools: [{googleSearch: {}}],
+                temperature: 0.1, // Factual but allows for good summarization
+            },
+        });
+        return response.text.trim();
+    } catch (error) {
+         console.error("Error fetching news with Gemini API:", error);
+        if (error instanceof Error && error.message.includes('API key not valid')) {
+            throw new Error('您的 API 金鑰無效或已過期。');
+        }
+        throw new Error("AI 搜尋新聞時發生錯誤，請稍後再試。");
+    }
+};
+
+
+/**
  * Generates a real-time AI insight summary for a specific stock.
  * @param stockName - The name of the stock.
  * @param stockCode - The code of the stock.
@@ -81,10 +117,10 @@ export const getAIStockInsight = async (stockName: string, stockCode: string, ap
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `你是一位頂尖的台灣股市分析師。請針對股票「${stockName} (${stockCode})」，提供一份簡潔、中立、專業的即時市場洞察。
+    const prompt = `你是一位頂尖的台灣股市分析師。請使用你的網路搜尋能力，針對股票「${stockName} (${stockCode})」，提供一份簡潔、中立、專業的即時市場洞察。
     
     內容需包含：
-    1.  **近期概況**: 總結最近影響該股票的關鍵新聞或市場情緒（約 2-3 句話）。
+    1.  **近期概況**: 根據最新的新聞和市場數據，總結最近影響該股票的關鍵事件或市場情緒（約 2-3 句話）。
     2.  **潛在動能**: 根據近期事件，點出一個主要的潛在利多或利空因素。
     
     請以專業、客觀的語氣，用繁體中文回覆，總長度控制在 150 字以內。`;
@@ -94,6 +130,7 @@ export const getAIStockInsight = async (stockName: string, stockCode: string, ap
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
+                tools: [{googleSearch: {}}],
                 temperature: 0.3,
             },
         });
