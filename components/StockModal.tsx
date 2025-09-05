@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stock } from '../types';
+import Sparkline from './Sparkline';
 
 interface StockModalProps {
     stock: Stock;
@@ -7,13 +8,13 @@ interface StockModalProps {
 }
 
 const TrendUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
     </svg>
 );
 
 const TrendDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 4.5 15 15m0 0V8.25m0 11.25H8.25" />
     </svg>
 );
@@ -76,6 +77,10 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose }) => {
                         </div>
                     </div>
                     
+                    <div className="h-20 mb-6 -mt-4">
+                        <Sparkline isPositive={isPositive} />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />

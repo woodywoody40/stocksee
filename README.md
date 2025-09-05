@@ -14,7 +14,7 @@
 
 ## 🛠️ 技術棧
 
--   **前端**: React, TypeScript, Tailwind CSS
+-   **前端**: React, TypeScript, Tailwind CSS, Vite
 -   **AI 模型**: Google Gemini API (`gemini-2.5-flash`)
 
 ## 🚀 部署與設定
@@ -23,9 +23,9 @@
 
 ### 環境變數
 
-為了讓 AI 分析功能正常運作，您需要在您的部署平台設定一個環境變數：
+為了讓 AI 分析功能正常運作，您需要在您的部署平台設定一個環境變數。由於此專案使用 Vite 進行建置，環境變數必須以 `VITE_` 開頭才能在前端程式碼中被讀取。
 
--   `API_KEY`: 您的 Google Gemini API 金鑰。
+-   `VITE_API_KEY`: 您的 Google Gemini API 金鑰。
 
 **重要提示**: 請勿將您的 API 金鑰直接寫在程式碼中或提交到版本控制系統。務必使用部署服務提供的環境變數功能來安全地管理金鑰。
 
@@ -36,4 +36,4 @@
 -   Netlify
 -   GitHub Pages
 
-在平台的設定頁面中，找到環境變數 (Environment Variables) 的設定選項，並新增一個名為 `API_KEY` 的變數，將您的金鑰貼入其值即可。
+在平台的設定頁面中，找到環境變數 (Environment Variables) 的設定選項，並新增一個名為 `VITE_API_KEY` 的變數，將您的金鑰貼入其值即可。

@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from '../types';
 
+// FIX: Removed `required` property from the schema as it is not a supported property for `responseSchema` in the Gemini API.
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -17,15 +18,16 @@ const ANALYSIS_SCHEMA = {
       description: "根據新聞預測短期股價的潛在走勢，必須是 'Up', 'Down', 或 'Unchanged' 其中之一。"
     }
   },
-  required: ["summary", "sentiment", "prediction"]
 };
 
 
 export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
+    // FIX: Per coding guidelines, the API key must be read from process.env.API_KEY.
     const apiKey = process.env.API_KEY;
 
     if (!apiKey) {
-        throw new Error("AI 服務因設定問題暫時無法使用，請稍後再試。");
+        // FIX: Updated error message to reference the correct environment variable.
+        throw new Error("AI 服務因設定問題暫時無法使用，請確認環境變數 API_KEY 已正確設定。");
     }
     
     const ai = new GoogleGenAI({ apiKey });
