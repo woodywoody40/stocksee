@@ -22,11 +22,11 @@ const ANALYSIS_SCHEMA = {
 
 
 export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
-    // FIX: Per coding guidelines, the API key must be read from process.env.API_KEY.
+    // FIX: Adhere to the API key guideline by using process.env.API_KEY. This resolves the TypeScript error with import.meta.env.
     const apiKey = process.env.API_KEY;
 
     if (!apiKey) {
-        // FIX: Updated error message to reference the correct environment variable.
+        // FIX: Updated error message to reference the correct environment variable API_KEY.
         throw new Error("AI 服務因設定問題暫時無法使用，請確認環境變數 API_KEY 已正確設定。");
     }
     
