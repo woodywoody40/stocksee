@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { analyzeNews } from '../services/geminiService';
 import { AnalysisResult } from '../types';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
+    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
@@ -21,20 +22,21 @@ const icons = {
 
 const AiAnalysisView: React.FC = () => {
     const [newsText, setNewsText] = useState('');
+    const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const handleAnalyze = async () => {
-        if (!newsText.trim()) {
-            setError('請貼上新聞文章內容。');
+        if (!newsText.trim() || !apiKey.trim()) {
+            setError('請貼上新聞文章內容並輸入您的 API 金鑰。');
             return;
         }
         setIsLoading(true);
         setError(null);
         setResult(null);
         try {
-            const analysisResult = await analyzeNews(newsText);
+            const analysisResult = await analyzeNews(newsText, apiKey);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
@@ -57,7 +59,27 @@ const AiAnalysisView: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-6">
+                    <div>
+                        <label htmlFor="api-key-input" className="block text-sm font-medium text-text-secondary mb-1.5">
+                            Google Gemini API 金鑰
+                        </label>
+                        <input
+                            id="api-key-input"
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="在此輸入您的 API 金鑰"
+                            className="w-full p-3 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue focus:outline-none transition"
+                            disabled={isLoading}
+                        />
+                         <p className="text-xs text-text-tertiary mt-1.5">
+                           您的金鑰將會儲存在瀏覽器中，方便下次使用。
+                           <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-blue/80 hover:underline ml-1 font-semibold">
+                               如何取得金鑰？
+                           </a>
+                        </p>
+                    </div>
                     <textarea
                         value={newsText}
                         onChange={(e) => setNewsText(e.target.value)}
@@ -67,7 +89,7 @@ const AiAnalysisView: React.FC = () => {
                     />
                     <button
                         onClick={handleAnalyze}
-                        disabled={isLoading || !newsText.trim()}
+                        disabled={isLoading || !newsText.trim() || !apiKey.trim()}
                         className="w-full flex justify-center items-center gap-2 bg-dark-border hover:bg-text-tertiary text-text-primary font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-gray-700 disabled:cursor-not-allowed"
                     >
                         {isLoading ? <><LoadingIcon /> 分析中...</> : '開始分析'}

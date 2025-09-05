@@ -19,21 +19,14 @@
 
 ## 🚀 部署與設定
 
-這個專案是一個純前端應用，可以直接部署到任何靜態網站託管服務。
+這個專案是一個純前端應用，可以直接部署到任何靜態網站託管服務，例如 Cloudflare Pages, Vercel, 或 Netlify。
 
-### 環境變數
+### AI 功能設定
 
-為了讓 AI 分析功能正常運作，您需要在您的部署平台設定一個環境變數。由於此專案使用 Vite 進行建置，環境變數必須以 `VITE_` 開頭才能在前端程式碼中被讀取。
+本應用的 AI 新聞分析功能需要使用 Google Gemini API。您需要在應用程式的「AI 新聞分析」頁面中，輸入您自己的 Google Gemini API 金鑰。
 
--   `VITE_API_KEY`: 您的 Google Gemini API 金鑰。
+1.  前往 [Google AI Studio](https://aistudio.google.com/app/apikey) 取得您的 API 金鑰。
+2.  將金鑰複製並貼到應用程式指定的輸入框中。
+3.  您的金鑰將會被安全地儲存在您的瀏覽器本地儲存空間 (Local Storage) 中，方便您下次使用，不會上傳到任何伺服器。
 
-**重要提示**: 請勿將您的 API 金鑰直接寫在程式碼中或提交到版本控制系統。務必使用部署服務提供的環境變數功能來安全地管理金鑰。
-
-### 部署平台範例
-
--   Cloudflare Pages
--   Vercel
--   Netlify
--   GitHub Pages
-
-在平台的設定頁面中，找到環境變數 (Environment Variables) 的設定選項，並新增一個名為 `VITE_API_KEY` 的變數，將您的金鑰貼入其值即可。
+**重要提示**: 請妥善保管您的 API 金鑰，不要與他人分享。

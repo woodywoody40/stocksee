@@ -20,13 +20,9 @@ const ANALYSIS_SCHEMA = {
 };
 
 
-export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
-    // FIX: Use `process.env.API_KEY` to get the API key as per coding guidelines, which also resolves the TypeScript error for 'import.meta.env'.
-    const apiKey = process.env.API_KEY;
-
+export const analyzeNews = async (newsText: string, apiKey: string): Promise<AnalysisResult> => {
     if (!apiKey) {
-        // FIX: Update error message to refer to the correct environment variable.
-        throw new Error("AI 服務因設定問題暫時無法使用，請確認環境變數 API_KEY 已正確設定。");
+        throw new Error("請在上方欄位輸入您的 Google Gemini API 金鑰。");
     }
     
     const ai = new GoogleGenAI({ apiKey });
@@ -63,7 +59,7 @@ ${newsText}
         console.error("Error analyzing news with Gemini API:", error);
         if (error instanceof Error) {
            if (error.message.includes('API key not valid')) {
-               throw new Error('AI 服務的金鑰設定無效，請聯繫管理員。');
+               throw new Error('您提供的 API 金鑰無效，請檢查後再試。');
            }
            throw new Error(`AI 分析失敗: ${error.message}`);
         }
