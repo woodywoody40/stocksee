@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { analyzeNews } from '../services/geminiService';
 import { AnalysisResult } from '../types';
 
@@ -21,47 +20,25 @@ const icons = {
 
 
 const AiAnalysisView: React.FC = () => {
-    const [apiKey, setApiKey] = useLocalStorage('gemini-api-key', '');
-    const [tempApiKey, setTempApiKey] = useState('');
     const [newsText, setNewsText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
-
-    const handleSaveKey = () => {
-        if (tempApiKey.trim()) {
-            setApiKey(tempApiKey.trim());
-            setTempApiKey('');
-        }
-    };
-
-    const handleResetKey = () => {
-        setApiKey('');
-        setError(null);
-        setResult(null);
-    }
 
     const handleAnalyze = async () => {
         if (!newsText.trim()) {
             setError('請貼上新聞文章內容。');
             return;
         }
-        if (!apiKey) {
-            setError('請先設定您的 Google Gemini API Key。');
-            return;
-        }
         setIsLoading(true);
         setError(null);
         setResult(null);
         try {
-            const analysisResult = await analyzeNews(newsText, apiKey);
+            const analysisResult = await analyzeNews(newsText);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
-                 if (err.message.includes('API Key 無效')) {
-                    setTimeout(handleResetKey, 500);
-                }
             } else {
                 setError('發生未知錯誤。');
             }
@@ -69,37 +46,6 @@ const AiAnalysisView: React.FC = () => {
             setIsLoading(false);
         }
     };
-
-    if (!apiKey) {
-        return (
-            <div className="max-w-xl mx-auto">
-                 <div className="bg-dark-card p-6 rounded-xl border border-dark-border shadow-2xl animate-fade-in">
-                    <h2 className="text-2xl font-bold mb-2 text-brand-gold">請先設定 API Key</h2>
-                    <p className="text-text-secondary mb-6">此功能需要您的 Google Gemini API 金鑰才能運作。金鑰將會安全地儲存在您的瀏覽器中，不會上傳到任何伺服器。</p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                            type="password"
-                            value={tempApiKey}
-                            onChange={(e) => setTempApiKey(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
-                            placeholder="貼上您的 Google Gemini API Key"
-                            className="flex-grow w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue focus:outline-none transition"
-                        />
-                        <button 
-                            onClick={handleSaveKey} 
-                            disabled={!tempApiKey.trim()}
-                            className="w-full sm:w-auto bg-dark-border hover:bg-text-tertiary text-text-primary font-bold py-2.5 px-6 rounded-lg transition disabled:bg-gray-700 disabled:cursor-not-allowed"
-                        >
-                            儲存金鑰
-                        </button>
-                    </div>
-                     {error && (
-                        <p className="text-negative text-sm mt-2">{error}</p>
-                    )}
-                </div>
-            </div>
-        );
-    }
     
     return (
         <div className="max-w-4xl mx-auto">
@@ -109,9 +55,6 @@ const AiAnalysisView: React.FC = () => {
                         <h2 className="text-2xl font-bold text-brand-gold">AI 新聞分析</h2>
                         <p className="text-text-secondary mt-1">貼上股票相關新聞，讓 AI 為您提煉重點、分析情緒與預測潛在走勢。</p>
                     </div>
-                     <button onClick={handleResetKey} className="text-xs text-text-secondary hover:text-brand-gold transition whitespace-nowrap ml-4 hover:underline">
-                        重設 API Key
-                    </button>
                 </div>
                 
                 <div className="space-y-4">

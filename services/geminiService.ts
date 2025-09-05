@@ -21,9 +21,11 @@ const ANALYSIS_SCHEMA = {
 };
 
 
-export const analyzeNews = async (newsText: string, apiKey: string): Promise<AnalysisResult> => {
+export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
+    const apiKey = process.env.API_KEY;
+
     if (!apiKey) {
-        throw new Error("Google Gemini API Key 尚未提供。");
+        throw new Error("AI 服務因設定問題暫時無法使用，請稍後再試。");
     }
     
     const ai = new GoogleGenAI({ apiKey });
@@ -60,7 +62,7 @@ ${newsText}
         console.error("Error analyzing news with Gemini API:", error);
         if (error instanceof Error) {
            if (error.message.includes('API key not valid')) {
-               throw new Error('提供的 API Key 無效或已過期，請檢查後再試。');
+               throw new Error('AI 服務的金鑰設定無效，請聯繫管理員。');
            }
            throw new Error(`AI 分析失敗: ${error.message}`);
         }

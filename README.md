@@ -1,20 +1,39 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 股見 - 台灣股市洞察
 
-# Run and deploy your AI Studio app
+一個專為台灣股市設計的 Web 應用程式，結合即時市場數據與 AI 新聞分析，幫助使用者快速掌握市場動態並從新聞中洞察先機。
 
-This contains everything you need to run your app locally.
+## ✨ 主要功能
 
-View your app in AI Studio: https://ai.studio/apps/drive/1GN-xBWpPHtUlZkX9VXCjTQ7jP8x4pDwk
+-   **即時市場數據**: 獲取台灣證券交易所 (TWSE) 的即時股價資訊。
+-   **自訂關注列表**: 追蹤您感興趣的股票，建立個人化的投資組合。
+-   **詳細個股資訊**: 查看開盤、最高、最低、成交量等詳細交易數據。
+-   **AI 新聞分析**: 貼上任何財經新聞，利用 Google Gemini API 快速生成：
+    -   **重點摘要**: 提煉新聞核心內容。
+    -   **情緒分析**: 判斷新聞對股價的潛在影響是正面、負面還是中性。
+    -   **趨勢預測**: 預測股價可能的短期波動。
 
-## Run Locally
+## 🛠️ 技術棧
 
-**Prerequisites:**  Node.js
+-   **前端**: React, TypeScript, Tailwind CSS
+-   **AI 模型**: Google Gemini API (`gemini-2.5-flash`)
 
+## 🚀 部署與設定
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+這個專案是一個純前端應用，可以直接部署到任何靜態網站託管服務。
+
+### 環境變數
+
+為了讓 AI 分析功能正常運作，您需要在您的部署平台設定一個環境變數：
+
+-   `API_KEY`: 您的 Google Gemini API 金鑰。
+
+**重要提示**: 請勿將您的 API 金鑰直接寫在程式碼中或提交到版本控制系統。務必使用部署服務提供的環境變數功能來安全地管理金鑰。
+
+### 部署平台範例
+
+-   Cloudflare Pages
+-   Vercel
+-   Netlify
+-   GitHub Pages
+
+在平台的設定頁面中，找到環境變數 (Environment Variables) 的設定選項，並新增一個名為 `API_KEY` 的變數，將您的金鑰貼入其值即可。
