@@ -32,3 +32,14 @@ export interface NewsArticle {
   text: string;
   sources: NewsSource[];
 }
+
+export interface HistoricalDataPoint {
+  date: string;
+  close: number;
+}
+
+// FIX: Export the `IndicatorPoint` interface for technical analysis data.
+export interface IndicatorPoint {
+  date: string;
+  value: number;
+}

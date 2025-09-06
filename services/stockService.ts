@@ -1,4 +1,5 @@
-import { Stock } from '../types';
+
+import { Stock, HistoricalDataPoint } from '../types';
 
 // Interface for the structure of a single stock object from the TWSE getStockInfo API response
 interface TwseStock {
@@ -25,31 +26,33 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
         return [];
     }
 
-    // For each code, generate queries for both TSE (上市) and OTC (上櫃) markets.
-    // The API will only return data for the valid market, effectively covering all stocks.
-    // e.g., ['2330', '6274'] becomes 'tse_2330.tw|otc_2330.tw|tse_6274.tw|otc_6274.tw'
     const query = codes.flatMap(code => [`tse_${code}.tw`, `otc_${code}.tw`]).join('|');
-    
-    // The official TWSE API endpoint for real-time data
     const apiUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${query}&json=1&delay=0&_=${Date.now()}`;
     
-    // We use a more reliable public CORS proxy to bypass browser security restrictions.
-    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${apiUrl}`;
+    // Use a more reliable CORS proxy
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
 
     try {
         const response = await fetch(proxyUrl);
         if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Proxy request failed with status ${response.status}:`, errorBody.substring(0, 500));
             throw new Error(`Network response was not ok: ${response.statusText}`);
         }
-        const data = await response.json();
-
-        if (!data || !data.msgArray || data.msgArray.length === 0) {
-            console.warn("TWSE API returned no data for codes:", codes);
-            // Return empty array for codes that might be invalid or delisted
-            return [];
+        
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.error("Failed to parse stock data JSON from proxy. Response text:", responseText.substring(0, 500));
+            throw new Error("無法解析從證交所收到的資料。 API 可能暫時無法使用。");
         }
 
-        // Map the raw API response to our standardized 'Stock' interface
+        if (!data || !data.msgArray || data.msgArray.length === 0) {
+            return []; // No data for the given codes, not an error.
+        }
+
         const stocks: Stock[] = data.msgArray.map((item: TwseStock) => {
             const price = parseFloat(item.z);
             const yesterdayPrice = parseFloat(item.y);
@@ -70,13 +73,95 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
             };
         });
 
-        // Since we query both TSE and OTC for each code, we might get duplicates if the API
-        // responds for both markets for a single code. We ensure uniqueness.
         const uniqueStocks = Array.from(new Map(stocks.map(stock => [stock.code, stock])).values());
-
         return uniqueStocks;
+
     } catch (error) {
         console.error("Failed to fetch real stock data via CORS proxy:", error);
         throw new Error("無法從台灣證券交易所獲取即時資料。這可能是暫時性網路問題或 CORS Proxy 服務不穩定所致。");
+    }
+};
+
+
+/**
+ * Fetches historical daily stock data for the last ~30 days for technical analysis.
+ * It tries fetching from TSE, and if that fails, it tries the TPEX (OTC) API.
+ * @param code - The stock code.
+ * @returns A promise that resolves to an array of HistoricalDataPoint objects.
+ */
+export const fetchHistoricalData = async (code: string): Promise<HistoricalDataPoint[]> => {
+    const today = new Date();
+    const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    const fetchData = async (isTse: boolean): Promise<any[]> => {
+        const dates = [today, lastMonthDate];
+        const urls = dates.map(date => {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            if (isTse) {
+                const queryDate = `${year}${month}01`;
+                return `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${queryDate}&stockNo=${code}`;
+            } else {
+                const rocYear = year - 1911;
+                const queryDate = `${rocYear}/${month}`;
+                return `https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=${queryDate}&stkno=${code}`;
+            }
+        });
+
+        const responses = await Promise.all(urls.map(url => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)));
+        let combinedData: any[] = [];
+
+        for (const response of responses) {
+            if (response.ok) {
+                const responseText = await response.text();
+                try {
+                    const json = JSON.parse(responseText);
+                    if (isTse && json.stat === "OK" && Array.isArray(json.data)) {
+                        combinedData.push(...json.data);
+                    } else if (!isTse && Array.isArray(json.aaData)) {
+                        combinedData.push(...json.aaData);
+                    }
+                } catch (e) {
+                    console.warn(`Failed to parse historical data response as JSON. URL: ${response.url}, Body:`, responseText.substring(0, 200));
+                }
+            }
+        }
+        return combinedData;
+    };
+
+    try {
+        let rawData = await fetchData(true);
+        if (rawData.length === 0) {
+            rawData = await fetchData(false); // Fallback to OTC
+        }
+        if (rawData.length === 0) {
+            throw new Error('No historical data found from TSE or OTC sources.');
+        }
+
+        const historicalPoints: HistoricalDataPoint[] = rawData
+            .map(item => {
+                if (Array.isArray(item) && item.length >= 7) {
+                    return {
+                        date: item[0]?.trim(),
+                        close: parseFloat(item[6]?.trim().replace(/,/g, '')),
+                    };
+                }
+                return null;
+            })
+            .filter((point): point is HistoricalDataPoint => point !== null && point.date != null && !isNaN(point.close));
+
+        const uniquePoints = Array.from(new Map(historicalPoints.map(p => [p.date, p])).values());
+        
+        uniquePoints.sort((a, b) => {
+            const dateA = new Date(a.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
+            const dateB = new Date(b.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
+            return dateB.getTime() - dateA.getTime();
+        });
+
+        return uniquePoints.slice(0, 30); // Return last 30 trading days
+
+    } catch (error) {
+        console.error(`Failed to fetch historical data for ${code}:`, error);
+        throw new Error("無法獲取歷史股價資料。");
     }
 };

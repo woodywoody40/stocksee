@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Stock } from '../types';
-import Sparkline from './Sparkline';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import { Stock, HistoricalDataPoint } from '../types';
 import { getAIStockInsight } from '../services/geminiService';
+import { fetchHistoricalData } from '../services/stockService';
+import StockChart from './StockChart';
 
 interface StockModalProps {
     stock: Stock;
@@ -10,15 +12,15 @@ interface StockModalProps {
     onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
 
-const TrendUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />
     </svg>
 );
 
-const TrendDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+const ArrowDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 4.5 15 15m0 0V8.25m0 11.25H8.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0 0l6.75-6.75M12 19.5l-6.75-6.75" />
     </svg>
 );
 
@@ -36,29 +38,74 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
     <div className={`flex justify-center items-center space-x-2 ${small ? 'p-0' : 'p-4'}`}>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
-
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div>
-        <p className="text-sm text-secondary-light dark:text-secondary-dark mb-1">{label}</p>
-        <p className={`text-xl font-semibold text-on-surface-light dark:text-on-surface-dark ${className}`}>{value}</p>
+    <div className="bg-surface-dark-alt/50 rounded-lg p-3 text-center">
+        <p className="text-xs text-secondary-dark mb-1">{label}</p>
+        <p className={`text-base font-semibold text-on-surface-dark ${className}`}>{value}</p>
     </div>
 );
 
 const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
-    const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
     
     const [aiInsight, setAiInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
     const [insightError, setInsightError] = useState<string | null>(null);
     const [isButtonLoading, setIsButtonLoading] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    
+    const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+
+    const handleClose = useCallback(() => {
+        if (isClosing) return;
+        setIsClosing(true);
+    }, [isClosing]);
+
+    const handleAnimationEnd = (e: React.AnimationEvent) => {
+        if (e.target === e.currentTarget && isClosing) {
+            onClose();
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                handleClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleClose]);
+    
+    useEffect(() => {
+        const loadHistoricalData = async () => {
+            setIsHistoryLoading(true);
+            setHistoryError(null);
+            setHistoricalData(null);
+            try {
+                const data = await fetchHistoricalData(stock.code);
+                setHistoricalData(data);
+            } catch (err) {
+                 if (err instanceof Error) {
+                    setHistoryError(err.message);
+                } else {
+                    setHistoryError('獲取歷史資料時發生未知錯誤。');
+                }
+            } finally {
+                setIsHistoryLoading(false);
+            }
+        };
+        loadHistoricalData();
+    }, [stock.code]);
 
     useEffect(() => {
         const fetchInsight = async () => {
@@ -66,24 +113,11 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 setInsightError("請先至「AI 新聞分析」頁面設定 API 金鑰。");
                 return;
             }
-
-            const cacheKey = `stock-insight-${stock.code}`;
-            const cachedItem = sessionStorage.getItem(cacheKey);
-            if (cachedItem) {
-                 const { insight, timestamp } = JSON.parse(cachedItem);
-                 // Cache for 5 minutes
-                 if (Date.now() - timestamp < 5 * 60 * 1000) {
-                    setAiInsight(insight);
-                    return;
-                 }
-            }
-
             setIsInsightLoading(true);
             setInsightError(null);
             try {
                 const insight = await getAIStockInsight(apiKey, stock.name, stock.code);
                 setAiInsight(insight);
-                sessionStorage.setItem(cacheKey, JSON.stringify({ insight, timestamp: Date.now() }));
             } catch (err) {
                 if (err instanceof Error) {
                     setInsightError(err.message);
@@ -105,81 +139,90 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
 
     return (
         <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-backdrop-fade-in"
-            onClick={onClose}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-fade-in"
+            style={{ perspective: '2000px' }}
+            onClick={handleClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className="bg-surface-light/90 dark:bg-surface-dark/80 backdrop-blur-xl rounded-3xl border border-outline-light dark:border-outline-dark shadow-2xl w-full max-w-lg transform animate-slide-up-fade overflow-hidden"
+                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-md flex flex-col overflow-hidden backface-hidden dark ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
+                style={{ transformStyle: 'preserve-3d' }}
                 onClick={(e) => e.stopPropagation()}
+                onAnimationEnd={handleAnimationEnd}
             >
-                 <div className="p-6">
+                <div className="flex-shrink-0 p-6 pb-0">
                     <button 
-                        onClick={onClose} 
-                        className="absolute top-4 right-4 text-secondary-light dark:text-secondary-dark hover:text-on-surface-light dark:hover:text-on-surface-dark bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary z-20"
+                        onClick={handleClose} 
+                        className="absolute top-4 right-4 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
                         aria-label="關閉視窗"
                     >
                         <CloseIcon className="w-5 h-5" />
                     </button>
 
-                    <div id="stock-modal-title" className="flex items-center gap-4 mb-4">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
-                           {isPositive ? <TrendUpIcon className="w-6 h-6 text-positive" /> : <TrendDownIcon className="w-6 h-6 text-negative" /> }
+                    <div id="stock-modal-title" className="flex items-center gap-3 mb-4">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
+                           {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : <ArrowDownIcon className="w-5 h-5 text-negative" /> }
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{stock.name}</h2>
-                            <p className="text-secondary-light dark:text-secondary-dark">{stock.code}</p>
+                            <h2 className="text-xl font-bold text-on-surface-dark">{stock.name}</h2>
+                            <p className="text-sm text-secondary-dark">{stock.code}</p>
                         </div>
                     </div>
                     
-                    <div className="my-6 text-center">
+                    <div className="my-4 text-left">
                         <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
-                        <div className={`text-lg font-semibold ${priceColor} mt-1`}>
+                        <div className={`text-base font-semibold ${priceColor} mt-1`}>
                             <span>{isPositive ? '▲' : '▼'}</span>
                             <span> {stock.change.toFixed(2)}</span>
                             <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
                         </div>
                     </div>
                     
-                    <div className="h-20 mb-6 -mt-4">
-                        <Sparkline data={priceData} />
+                    <div className="h-40 my-4">
+                        {isHistoryLoading ? (
+                             <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
+                        ) : historyError ? (
+                             <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
+                        ) : historicalData ? (
+                             <StockChart priceData={historicalData} />
+                        ) : null}
                     </div>
                 </div>
 
-                <div className="max-h-[calc(80vh-350px)] overflow-y-auto px-6 pb-6 space-y-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="flex-grow overflow-y-auto modal-scrollbar px-6 pb-6 space-y-6">
+                    <div className="grid grid-cols-3 gap-3">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
-                        <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
-                        <DetailItem label="成交量(張)" value={Math.floor(stock.volume / 1000).toLocaleString()} />
                         <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
                         <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
+                        <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
+                        <DetailItem label="成交量" value={`${Math.floor(stock.volume / 1000).toLocaleString()} 張`} />
                     </div>
-
-                    <div className="relative p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-transparent dark:from-primary/10 dark:to-transparent overflow-hidden shadow-glow-orange">
-                       <div className="absolute -top-10 -right-10 text-primary/10 dark:text-primary/20">
-                            <SparklesIcon className="w-24 h-24 transform rotate-12" />
+                     
+                    <div className="relative p-4 rounded-xl border border-brand-orange/40 bg-gradient-to-br from-brand-orange/10 to-transparent">
+                       <div className="absolute -top-1 -right-1 text-brand-orange/20">
+                            <SparklesIcon className="w-16 h-16 transform rotate-12" />
                        </div>
                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 text-primary font-semibold mb-3">
+                            <div className="flex items-center gap-2 text-brand-orange font-semibold mb-2">
                                <SparklesIcon className="w-5 h-5"/>
                                <h4>AI 即時洞察</h4>
                             </div>
-                             <div className="text-sm min-h-[60px]">
+                             <div className="text-sm min-h-[50px]">
                                {isInsightLoading && <LoadingSpinner />}
                                {insightError && <p className="text-positive/90">{insightError}</p>}
-                               {aiInsight && <p className="text-secondary-light dark:text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                               {aiInsight && <p className="text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 bg-surface-light/70 dark:bg-black/20 border-t border-outline-light dark:border-outline-dark">
+                <div className="flex-shrink-0 p-5 bg-black/20 border-t border-outline-dark">
                      <button
                         onClick={handleDeepAnalysisClick}
                         disabled={isButtonLoading || !apiKey}
-                        className="w-full flex justify-center items-center gap-2 bg-primary hover:bg-primary/90 text-on-primary font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-tertiary-light dark:disabled:bg-tertiary-dark disabled:cursor-wait transform hover:scale-105"
+                        className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-wait transform hover:scale-105"
                     >
                         {isButtonLoading ? (
                            <LoadingSpinner small={true} />
