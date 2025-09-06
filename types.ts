@@ -35,23 +35,11 @@ export interface NewsArticle {
 
 export interface HistoricalDataPoint {
   date: string;
-  open: number;
-  high: number;
-  low: number;
   close: number;
-  volume: number;
 }
-
-export interface MACDPoint {
-  date: string;
-  macd?: number;
-  signal?: number;
-  histogram?: number;
-}
-
 
 // FIX: Export the `IndicatorPoint` interface for technical analysis data.
 export interface IndicatorPoint {
   date: string;
-  value: number | null;
+  value: number;
 }

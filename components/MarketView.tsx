@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { fetchStockData } from '../services/stockService';
@@ -27,10 +26,9 @@ const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 interface MarketViewProps {
     apiKey: string;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
-    onShowTechAnalysis: (stock: Stock) => void;
 }
 
-const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis, onShowTechAnalysis }) => {
+const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -112,12 +110,6 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis, onShow
             prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
         );
     }, [setWatchlist]);
-    
-    const handleShowTechAnalysisWithClose = useCallback((stock: Stock) => {
-        onShowTechAnalysis(stock);
-        setSelectedStock(null);
-    }, [onShowTechAnalysis]);
-
 
     const handleSearch = useCallback((term: string) => {
         const trimmedTerm = term.trim();
@@ -216,7 +208,6 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis, onShow
                   apiKey={apiKey}
                   onClose={() => setSelectedStock(null)}
                   onStartAnalysis={onStartAnalysis}
-                  onShowTechAnalysis={handleShowTechAnalysisWithClose}
                 />
             )}
         </div>

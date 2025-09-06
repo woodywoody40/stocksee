@@ -1,10 +1,8 @@
-
 import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
-import TechnicalAnalysisView from './components/TechnicalAnalysisView';
-import { Tab, NewsArticle, Stock } from './types';
+import { Tab, NewsArticle } from './types';
 import { fetchNewsWithGemini } from './services/geminiService';
 import useLocalStorage from './hooks/useLocalStorage';
 
@@ -15,7 +13,6 @@ const App: React.FC = () => {
   const [analysisArticle, setAnalysisArticle] = useState<NewsArticle | null>(null);
   const [isFetchingNews, setIsFetchingNews] = useState(false);
   const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
-  const [techAnalysisStock, setTechAnalysisStock] = useState<Stock | null>(null);
   
   const handleTabChange = useCallback((tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
@@ -53,24 +50,13 @@ const App: React.FC = () => {
       setIsFetchingNews(false);
     }
   }, [apiKey]);
-  
-  const handleShowTechAnalysis = useCallback((stock: Stock) => {
-    setTechAnalysisStock(stock);
-  }, []);
 
-  const handleCloseTechAnalysis = useCallback(() => {
-    setTechAnalysisStock(null);
-  }, []);
-
-  if (techAnalysisStock) {
-    return <TechnicalAnalysisView stock={techAnalysisStock} onClose={handleCloseTechAnalysis} />;
-  }
 
   return (
     <div className="min-h-screen font-sans bg-background-light dark:bg-background-dark">
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
-        {activeTab === Tab.Market && <MarketView apiKey={apiKey} onStartAnalysis={handleStartAnalysis} onShowTechAnalysis={handleShowTechAnalysis} />}
+        {activeTab === Tab.Market && <MarketView apiKey={apiKey} onStartAnalysis={handleStartAnalysis} />}
         {activeTab === Tab.AI_Analysis && (
           <AiAnalysisView 
             apiKey={apiKey}

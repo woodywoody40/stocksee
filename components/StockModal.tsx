@@ -1,9 +1,7 @@
 
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { Stock, HistoricalDataPoint } from '../types';
 import { getAIStockInsight } from '../services/geminiService';
-// FIX: Import fetchHistoricalData to get real historical data for the chart.
 import { fetchHistoricalData } from '../services/stockService';
 import StockChart from './StockChart';
 
@@ -12,7 +10,6 @@ interface StockModalProps {
     apiKey: string;
     onClose: () => void;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
-    onShowTechAnalysis: (stock: Stock) => void;
 }
 
 const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -32,13 +29,6 @@ const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
     </svg>
 );
-
-const ChartBarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-  </svg>
-);
-
 
 const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -61,7 +51,7 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
     </div>
 );
 
-const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis, onShowTechAnalysis }) => {
+const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     
@@ -71,7 +61,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     const [isButtonLoading, setIsButtonLoading] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     
-    // FIX: Changed state to hold full HistoricalDataPoint objects and used real historical data fetch.
     const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
     const [historyError, setHistoryError] = useState<string | null>(null);
@@ -103,7 +92,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             setHistoryError(null);
             setHistoricalData(null);
             try {
-                // FIX: Use the actual historical data service instead of simulating data.
                 const data = await fetchHistoricalData(stock.code);
                 setHistoricalData(data);
             } catch (err) {
@@ -204,7 +192,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 </div>
 
                 <div className="flex-grow overflow-y-auto modal-scrollbar px-6 pb-6 space-y-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
                         <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
@@ -230,15 +218,8 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 p-5 bg-black/20 border-t border-outline-dark grid grid-cols-2 gap-3">
+                <div className="flex-shrink-0 p-5 bg-black/20 border-t border-outline-dark">
                      <button
-                        onClick={() => onShowTechAnalysis(stock)}
-                        className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 transform hover:scale-105"
-                    >
-                        <ChartBarIcon className="w-5 h-5" />
-                        技術分析
-                    </button>
-                    <button
                         onClick={handleDeepAnalysisClick}
                         disabled={isButtonLoading || !apiKey}
                         className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-wait transform hover:scale-105"
