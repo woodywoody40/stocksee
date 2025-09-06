@@ -84,13 +84,15 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
 
 
 /**
- * Fetches historical daily stock data for the last ~30 days for technical analysis.
+ * Fetches historical daily stock data for the last ~30 trading days for technical analysis.
  * It tries fetching from TSE, and if that fails, it tries the TPEX (OTC) API.
+ * This version fetches full OHLCV (Open, High, Low, Close, Volume) data.
  * @param code - The stock code.
  * @returns A promise that resolves to an array of HistoricalDataPoint objects.
  */
 export const fetchHistoricalData = async (code: string): Promise<HistoricalDataPoint[]> => {
     const today = new Date();
+    // Fetch data for the current month and the previous month to ensure we get at least 30 days of data
     const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
     
     const fetchData = async (isTse: boolean): Promise<any[]> => {
@@ -137,19 +139,38 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
         if (rawData.length === 0) {
             throw new Error('No historical data found from TSE or OTC sources.');
         }
+        
+        const isOtc = rawData[0]?.length === 8; // OTC data has 8 fields, TSE has 9
 
         const historicalPoints: HistoricalDataPoint[] = rawData
             .map(item => {
                 if (Array.isArray(item) && item.length >= 7) {
-                    return {
-                        date: item[0]?.trim(),
-                        close: parseFloat(item[6]?.trim().replace(/,/g, '')),
-                    };
+                    try {
+                        return {
+                            date: item[0]?.trim(),
+                            volume: parseInt(item[1]?.trim().replace(/,/g, ''), 10) * (isOtc ? 1000 : 1),
+                            open: parseFloat(item[3]?.trim().replace(/,/g, '')),
+                            high: parseFloat(item[4]?.trim().replace(/,/g, '')),
+                            low: parseFloat(item[5]?.trim().replace(/,/g, '')),
+                            close: parseFloat(item[6]?.trim().replace(/,/g, '')),
+                        };
+                    } catch {
+                        return null; // Skip if parsing fails for any field
+                    }
                 }
                 return null;
             })
-            .filter((point): point is HistoricalDataPoint => point !== null && point.date != null && !isNaN(point.close));
+            .filter((point): point is HistoricalDataPoint => 
+                point !== null && 
+                point.date != null && 
+                !isNaN(point.close) &&
+                !isNaN(point.open) &&
+                !isNaN(point.high) &&
+                !isNaN(point.low) &&
+                !isNaN(point.volume)
+            );
 
+        // Remove duplicates and sort by date descending (newest first)
         const uniquePoints = Array.from(new Map(historicalPoints.map(p => [p.date, p])).values());
         
         uniquePoints.sort((a, b) => {
@@ -158,7 +179,8 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
             return dateB.getTime() - dateA.getTime();
         });
 
-        return uniquePoints.slice(0, 30); // Return last 30 trading days
+        // The API returns monthly data, so we slice to get roughly the last 30 trading days
+        return uniquePoints.slice(0, 60).reverse(); // Return last 60 days, oldest first for charting
 
     } catch (error) {
         console.error(`Failed to fetch historical data for ${code}:`, error);

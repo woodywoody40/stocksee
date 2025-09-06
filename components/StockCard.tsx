@@ -27,7 +27,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
 
     return (
         <div 
-            className={`relative bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1 hover:shadow-xl shadow-lg shadow-gray-100 dark:shadow-none`}
+            className={`relative bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1 hover:shadow-xl shadow-lg shadow-gray-100 dark:shadow-none active:scale-95`}
             onClick={() => onCardClick(stock)}
         >
             <div className="relative z-10">

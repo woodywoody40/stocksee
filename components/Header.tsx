@@ -23,7 +23,7 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const getTabClass = (tab: Tab) =>
-    `flex items-center justify-center flex-shrink-0 whitespace-nowrap gap-2 px-4 py-2 rounded-lg text-sm font-semibold outline-none transition-all duration-300 ease-in-out ${
+    `flex items-center justify-center flex-shrink-0 whitespace-nowrap gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold outline-none transition-all duration-300 ease-in-out ${
       activeTab === tab
         ? 'bg-primary text-on-primary shadow-md'
         : 'text-secondary-light dark:text-secondary-dark hover:bg-primary/10'
@@ -42,11 +42,11 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             <nav className="flex items-center gap-2 w-full sm:w-auto">
               <button onClick={() => setActiveTab(Tab.Market)} className={getTabClass(Tab.Market)}>
                   <ChartBarIcon className="w-5 h-5" />
-                  市場動態
+                  <span className="hidden sm:inline">市場動態</span>
               </button>
               <button onClick={() => setActiveTab(Tab.AI_Analysis)} className={getTabClass(Tab.AI_Analysis)}>
                   <SparklesIcon className="w-5 h-5" />
-                  AI 新聞分析
+                  <span className="hidden sm:inline">AI 新聞分析</span>
               </button>
             </nav>
             <ThemeToggle />
