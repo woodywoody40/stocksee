@@ -36,7 +36,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   // For API calls, always go to the network to ensure data is fresh.
-  if (event.request.url.includes('api.codetabs.com/v1/proxy')) {
+  if (event.request.url.includes('corsproxy.io')) {
     event.respondWith(fetch(event.request));
     return;
   }

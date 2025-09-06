@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { fetchStockData } from '../services/stockService';
-import { Stock } from '../types';
+import { getFullStockList } from '../services/stockListService';
+import { Stock, StockListItem } from '../types';
 import { DEFAULT_STOCKS, REFRESH_INTERVAL } from '../constants';
 import { TW_STOCKS } from '../data/tw_stocks';
 import StockCard from './StockCard';
@@ -36,6 +38,20 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
     const [searchCodes, setSearchCodes] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [fullStockList, setFullStockList] = useState<StockListItem[]>(TW_STOCKS);
+
+
+    useEffect(() => {
+        const loadFullList = async () => {
+            try {
+                const list = await getFullStockList();
+                setFullStockList(list);
+            } catch (error) {
+                console.warn("Could not load full stock list, search may be incomplete.", error);
+            }
+        };
+        loadFullList();
+    }, []);
 
     const codesToFetch = useMemo(() => {
         const combined = new Set([...DEFAULT_STOCKS, ...watchlist, ...searchCodes]);
@@ -123,10 +139,11 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         const lowerCaseTerm = trimmedTerm.toLowerCase();
     
         // Find codes by matching name, code, or alias from the complete static list
-        const codesFromNameSearch = TW_STOCKS
+        const codesFromNameSearch = fullStockList
             .filter(stock =>
-                stock.code.includes(lowerCaseTerm) ||
+                // Use case-insensitive includes for all fields for better searchability.
                 stock.name.toLowerCase().includes(lowerCaseTerm) ||
+                stock.code.toLowerCase().includes(lowerCaseTerm) ||
                 (stock.alias && stock.alias.some(a => a.toLowerCase().includes(lowerCaseTerm)))
             )
             .map(stock => stock.code);
@@ -139,7 +156,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         }
         
         setSearchCodes(Array.from(potentialCodes));
-    }, []);
+    }, [fullStockList]);
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
     const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code) && !watchlist.includes(stock.code));
@@ -162,7 +179,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
 
     return (
         <div className="space-y-12">
-            <SearchBar stockList={TW_STOCKS} onSearch={handleSearch} />
+            <SearchBar stockList={fullStockList} onSearch={handleSearch} />
             {error && <p className="text-center text-positive bg-positive/20 p-3 rounded-lg">{error}</p>}
             
             {isLoading ? (

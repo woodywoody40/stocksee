@@ -11,10 +11,9 @@ export function useTheme(): [Theme, () => void] {
   useEffect(() => {
     // Check localStorage for a previously saved theme preference.
     const storedTheme = window.localStorage.getItem('theme') as Theme | null;
-    // Check the user's OS-level preference.
-    const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    // Use the stored theme if it exists, otherwise fall back to the OS preference.
-    const initialTheme = storedTheme || preferredTheme;
+    
+    // Default to 'dark' mode if no theme is stored, ignoring system preference for design consistency.
+    const initialTheme = storedTheme || 'dark';
     setTheme(initialTheme);
   }, []);
 

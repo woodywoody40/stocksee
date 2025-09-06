@@ -85,83 +85,118 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
 
 /**
  * Fetches historical daily stock data for the last ~30 days for technical analysis.
- * It tries fetching from TSE, and if that fails, it tries the TPEX (OTC) API.
+ * It tries fetching from TSE, OTC, and Emerging markets in sequence to find data.
  * @param code - The stock code.
  * @returns A promise that resolves to an array of HistoricalDataPoint objects.
  */
 export const fetchHistoricalData = async (code: string): Promise<HistoricalDataPoint[]> => {
     const today = new Date();
+    // Fetch data for the current month and the previous month to ensure we get ~30 days.
     const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
     
-    const fetchData = async (isTse: boolean): Promise<any[]> => {
-        const dates = [today, lastMonthDate];
-        const urls = dates.map(date => {
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            if (isTse) {
-                const queryDate = `${year}${month}01`;
-                return `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${queryDate}&stockNo=${code}`;
-            } else {
-                const rocYear = year - 1911;
-                const queryDate = `${rocYear}/${month}`;
-                return `https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=${queryDate}&stkno=${code}`;
-            }
-        });
-
-        const responses = await Promise.all(urls.map(url => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)));
-        let combinedData: any[] = [];
-
-        for (const response of responses) {
-            if (response.ok) {
-                const responseText = await response.text();
-                try {
-                    const json = JSON.parse(responseText);
-                    if (isTse && json.stat === "OK" && Array.isArray(json.data)) {
-                        combinedData.push(...json.data);
-                    } else if (!isTse && Array.isArray(json.aaData)) {
-                        combinedData.push(...json.aaData);
-                    }
-                } catch (e) {
-                    console.warn(`Failed to parse historical data response as JSON. URL: ${response.url}, Body:`, responseText.substring(0, 200));
-                }
-            }
+    // Define the different data sources and their properties.
+    const sources = {
+        TSE: {
+            getUrl: (year: number, month: string) => `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${year}${month}01&stockNo=${code}`,
+            getData: (json: any) => (json.stat === "OK" && Array.isArray(json.data) ? json.data : []),
+            getClosePriceIndex: () => 6,
+        },
+        OTC: {
+            getUrl: (rocYear: number, month: string) => `https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=${rocYear}/${month}&stkno=${code}`,
+            getData: (json: any) => (Array.isArray(json.aaData) ? json.aaData : []),
+            getClosePriceIndex: () => 6,
+        },
+        EMERGING: {
+            getUrl: (rocYear: number, month: string) => `https://www.tpex.org.tw/web/stock/emergingstock/historical/daily/EMDaily_result.php?l=zh-tw&d=${rocYear}/${month}&stkno=${code}`,
+            getData: (json: any) => (Array.isArray(json.aaData) ? json.aaData : []),
+            // Emerging market uses weighted average price as there is no "closing" price.
+            getClosePriceIndex: () => 4,
         }
-        return combinedData;
     };
 
+    let rawData: any[] = [];
+    let sourceKey: keyof typeof sources | null = null;
+
     try {
-        let rawData = await fetchData(true);
-        if (rawData.length === 0) {
-            rawData = await fetchData(false); // Fallback to OTC
+        // Sequentially try to fetch data from each source.
+        for (const key of Object.keys(sources) as Array<keyof typeof sources>) {
+            sourceKey = key;
+            const currentSource = sources[sourceKey];
+            const dates = [today, lastMonthDate];
+
+            const urls = dates.map(date => {
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const rocYear = year - 1911;
+                return currentSource.getUrl(sourceKey === 'TSE' ? year : rocYear, month);
+            });
+
+            const responses = await Promise.all(urls.map(url => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)));
+            let combinedData: any[] = [];
+
+            for (const response of responses) {
+                if (response.ok) {
+                    const responseText = await response.text();
+                    try {
+                        const json = JSON.parse(responseText);
+                        combinedData.push(...currentSource.getData(json));
+                    } catch (e) {
+                        console.warn(`Failed to parse historical data for ${sourceKey}. URL: ${response.url}, Body:`, responseText.substring(0, 200));
+                    }
+                }
+            }
+            
+            if (combinedData.length > 0) {
+                rawData = combinedData;
+                break; // Found data, stop searching.
+            } else {
+                sourceKey = null; // Reset if no data found.
+            }
         }
-        if (rawData.length === 0) {
-            throw new Error('No historical data found from TSE or OTC sources.');
+        
+        if (rawData.length === 0 || !sourceKey) {
+            throw new Error('No historical data found from TSE, OTC, or Emerging sources.');
         }
 
+        const closePriceIndex = sources[sourceKey].getClosePriceIndex();
         const historicalPoints: HistoricalDataPoint[] = rawData
             .map(item => {
-                if (Array.isArray(item) && item.length >= 7) {
-                    return {
-                        date: item[0]?.trim(),
-                        close: parseFloat(item[6]?.trim().replace(/,/g, '')),
-                    };
+                if (Array.isArray(item) && item.length > closePriceIndex) {
+                    const date = item[0]?.trim();
+                    const closePriceStr = item[closePriceIndex];
+                    if (date && typeof closePriceStr === 'string') {
+                         return {
+                            date: date,
+                            close: parseFloat(closePriceStr.trim().replace(/,/g, '')),
+                        };
+                    }
                 }
                 return null;
             })
-            .filter((point): point is HistoricalDataPoint => point !== null && point.date != null && !isNaN(point.close));
+            .filter((point): point is HistoricalDataPoint => point !== null && point.date != null && !isNaN(point.close) && point.close > 0);
 
+        if (historicalPoints.length === 0) {
+            throw new Error('Could not parse any valid historical data points from the API response.');
+        }
+
+        // De-duplicate and sort the data.
         const uniquePoints = Array.from(new Map(historicalPoints.map(p => [p.date, p])).values());
         
         uniquePoints.sort((a, b) => {
+            // Dates are in ROC format (e.g., "113/05/22").
             const dateA = new Date(a.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
             const dateB = new Date(b.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
             return dateB.getTime() - dateA.getTime();
         });
 
-        return uniquePoints.slice(0, 30); // Return last 30 trading days
+        // Return the most recent 30 trading days.
+        return uniquePoints.slice(0, 30);
 
     } catch (error) {
-        console.error(`Failed to fetch historical data for ${code}:`, error);
+        console.error(`Failed to fetch or parse historical data for ${code}:`, error);
+        if (error instanceof Error && error.message.includes('No historical data found')) {
+             throw new Error("無法從上市、上櫃或興櫃市場獲取此股票的歷史股價資料。");
+        }
         throw new Error("無法獲取歷史股價資料。");
     }
 };

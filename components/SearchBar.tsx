@@ -1,10 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-interface StockListItem {
-    code: string; 
-    name: string; 
-    alias?: string[];
-}
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { StockListItem } from '../types';
 
 interface SearchBarProps {
     stockList: StockListItem[];
@@ -33,10 +29,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
 
     useEffect(() => {
         if (input.trim() && stockList.length > 0) {
-            const lowerCaseInput = input.toLowerCase();
+            const trimmedInput = input.trim();
+            const lowerCaseInput = trimmedInput.toLowerCase();
             const filtered = stockList.filter(stock => {
+                // Use case-insensitive includes for all fields for better searchability.
                 const nameMatch = stock.name.toLowerCase().includes(lowerCaseInput);
-                const codeMatch = stock.code.includes(lowerCaseInput);
+                const codeMatch = stock.code.toLowerCase().includes(lowerCaseInput);
                 const aliasMatch = stock.alias?.some(a => a.toLowerCase().includes(lowerCaseInput));
                 return nameMatch || codeMatch || aliasMatch;
             }).slice(0, 7); // Limit suggestions to 7

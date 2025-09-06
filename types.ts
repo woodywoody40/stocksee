@@ -38,6 +38,12 @@ export interface HistoricalDataPoint {
   close: number;
 }
 
+export interface StockListItem {
+  code: string;
+  name: string;
+  alias?: string[];
+}
+
 // FIX: Export the `IndicatorPoint` interface for technical analysis data.
 export interface IndicatorPoint {
   date: string;
