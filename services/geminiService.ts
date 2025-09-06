@@ -80,7 +80,7 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
     }
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `你是一位頂尖的財經新聞專家。請使用你的網路搜尋能力，找出關於台灣股票「${stockName} (${stockCode})」今天或近期最重要的一篇財經新聞。
+    const prompt = `你是一位頂尖的財經新聞專家。請使用你的網路搜尋能力，找出關於台灣股票「${stockName} (${stockCode})」今天或近期最重要的一篇新聞。
 
 找到後，請以客觀中立的語氣，「摘要」這篇新聞的「核心內容」。你的回覆應該只包含新聞摘要本身，不要有任何前言或評論。
 

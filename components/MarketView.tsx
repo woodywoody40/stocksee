@@ -3,10 +3,10 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { fetchStockData } from '../services/stockService';
 import { Stock } from '../types';
 import { DEFAULT_STOCKS, REFRESH_INTERVAL } from '../constants';
+import { TW_STOCKS } from '../data/tw_stocks';
 import StockCard from './StockCard';
 import StockModal from './StockModal';
 import SearchBar from './SearchBar';
-import { TW_STOCKS } from '../data/tw_stocks';
 
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center p-12 space-x-2">
@@ -44,7 +44,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
 
     // Effect for user-driven data fetching (initial load, search, watchlist changes)
     useEffect(() => {
-        let isCancelled = false;
+        const controller = new AbortController();
         const loadData = async () => {
             setIsLoading(true);
             setError(null);
@@ -56,18 +56,19 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             }
 
             try {
+                // The stock service is not yet adapted for AbortController, so we handle cancellation logic here.
                 const data = await fetchStockData(codesToFetch);
-                if (!isCancelled) {
+                if (!controller.signal.aborted) {
                     const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
                     setStocks(sortedData);
                 }
             } catch (err) {
-                if (!isCancelled) {
+                 if (!controller.signal.aborted) {
                     setError('無法獲取股票資料，請稍後再試。');
                     console.error(err);
                 }
             } finally {
-                if (!isCancelled) {
+                if (!controller.signal.aborted) {
                     setIsLoading(false);
                 }
             }
@@ -76,7 +77,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         loadData();
 
         return () => {
-            isCancelled = true;
+            controller.abort();
         };
     }, [codesToFetch]);
 
@@ -89,8 +90,10 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
                 setStocks(currentStocks => {
                     const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-                    // Create a combined list of codes to maintain order and include new stocks
-                    const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
+                    const currentCodes = currentStocks.map(s => s.code);
+                    const newCodes = sortedData.map(s => s.code);
+                    const allCodes = Array.from(new Set([...currentCodes, ...newCodes]));
+                    
                     return allCodes.map(code => newStocksMap.get(code) || currentStocks.find(s => s.code === code)).filter(Boolean) as Stock[];
                 });
             } catch (err) {
@@ -102,13 +105,13 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     }, [codesToFetch]);
 
 
-    const toggleWatchlist = (code: string) => {
+    const toggleWatchlist = useCallback((code: string) => {
         setWatchlist(prev =>
             prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
         );
-    };
+    }, [setWatchlist]);
 
-    const handleSearch = (term: string) => {
+    const handleSearch = useCallback((term: string) => {
         const trimmedTerm = term.trim();
         setSearchTerm(trimmedTerm);
     
@@ -119,7 +122,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     
         const lowerCaseTerm = trimmedTerm.toLowerCase();
     
-        // Find codes by matching name, code, or alias from our local list
+        // Find codes by matching name, code, or alias from the complete static list
         const codesFromNameSearch = TW_STOCKS
             .filter(stock =>
                 stock.code.includes(lowerCaseTerm) ||
@@ -130,14 +133,13 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     
         const potentialCodes = new Set<string>(codesFromNameSearch);
     
-        // Also treat the input itself as a potential code to allow "searching via API"
-        // for any code, even those not in our local list.
+        // Also treat the input itself as a potential code to allow "searching via API" for real-time data
         if (/^\d{3,6}$/.test(trimmedTerm)) {
             potentialCodes.add(trimmedTerm);
         }
         
         setSearchCodes(Array.from(potentialCodes));
-    };
+    }, []);
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
     const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code));
@@ -160,7 +162,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
 
     return (
         <div className="space-y-12">
-            <SearchBar onSearch={handleSearch} />
+            <SearchBar stockList={TW_STOCKS} onSearch={handleSearch} />
             {error && <p className="text-center text-positive bg-positive/20 p-3 rounded-lg">{error}</p>}
             
             {isLoading ? (
@@ -212,4 +214,4 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     );
 };
 
-export default MarketView;
+export default React.memo(MarketView);

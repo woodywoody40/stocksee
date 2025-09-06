@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stocksee-cache-v4';
+const CACHE_NAME = 'stocksee-cache-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -35,8 +35,8 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // For API calls to the stock service, always go to the network to ensure data is fresh.
-  if (event.request.url.includes('corsproxy.io')) {
+  // For API calls, always go to the network to ensure data is fresh.
+  if (event.request.url.includes('api.codetabs.com/v1/proxy')) {
     event.respondWith(fetch(event.request));
     return;
   }

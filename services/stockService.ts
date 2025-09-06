@@ -33,8 +33,8 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
     // The official TWSE API endpoint for real-time data
     const apiUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${query}&json=1&delay=0&_=${Date.now()}`;
     
-    // We use a public CORS proxy to bypass browser security restrictions.
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    // We use a more reliable public CORS proxy to bypass browser security restrictions.
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${apiUrl}`;
 
     try {
         const response = await fetch(proxyUrl);
