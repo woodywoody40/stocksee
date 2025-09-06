@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-3">
-            <ChartBarIcon className="w-7 h-7 text-brand-gold" />
+            <img src="/logo.svg" alt="股見 Logo" className="w-8 h-8" />
             <h1 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary tracking-wider">股見</h1>
             <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-1.5 hidden sm:inline-block">台灣股市洞察</span>
           </div>
