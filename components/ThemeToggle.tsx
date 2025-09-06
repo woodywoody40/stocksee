@@ -19,13 +19,13 @@ const ThemeToggle: React.FC = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-full text-text-light-secondary dark:text-text-dark-secondary hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200"
+      className="p-2 rounded-full text-secondary-light dark:text-secondary-dark hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-200"
       aria-label={`切換至${theme === 'light' ? '深色' : '淺色'}模式`}
     >
       {theme === 'light' ? (
         <MoonIcon className="w-6 h-6" />
       ) : (
-        <SunIcon className="w-6 h-6 text-brand-gold" />
+        <SunIcon className="w-6 h-6 text-primary" />
       )}
     </button>
   );

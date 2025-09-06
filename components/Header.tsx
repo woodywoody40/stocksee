@@ -25,21 +25,21 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const getTabClass = (tab: Tab) =>
     `flex items-center justify-center flex-shrink-0 whitespace-nowrap gap-2 px-4 py-2 rounded-lg text-sm font-semibold outline-none transition-all duration-300 ease-in-out ${
       activeTab === tab
-        ? 'bg-brand-orange text-white shadow-md'
-        : 'text-text-light-secondary dark:text-text-dark-secondary hover:bg-black/5 dark:hover:bg-white/10'
+        ? 'bg-primary text-on-primary shadow-md'
+        : 'text-secondary-light dark:text-secondary-dark hover:bg-primary/10'
     }`;
 
   return (
-    <header className="sticky top-0 z-40 bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-lg border-b border-light-border dark:border-dark-border">
+    <header className="sticky top-0 z-40 bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-lg border-b border-outline-light dark:border-outline-dark">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-3">
             <img src={LOGO_DATA_URL} alt="股見 Logo" className="w-8 h-8" />
-            <h1 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary tracking-wider">股見</h1>
-            <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-1.5 hidden sm:inline-block">台灣股市洞察</span>
+            <h1 className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark tracking-wider">股見</h1>
+            <span className="text-xs text-secondary-light dark:text-secondary-dark mt-1.5 hidden sm:inline-block">台灣股市洞察</span>
           </div>
           <div className="flex items-center gap-2">
-            <nav className="flex items-center gap-1 p-1 bg-slate-200/60 dark:bg-black/20 rounded-xl w-full sm:w-auto">
+            <nav className="flex items-center gap-2 w-full sm:w-auto">
               <button onClick={() => setActiveTab(Tab.Market)} className={getTabClass(Tab.Market)}>
                   <ChartBarIcon className="w-5 h-5" />
                   市場動態

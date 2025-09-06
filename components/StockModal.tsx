@@ -36,17 +36,17 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
     <div className={`flex justify-center items-center space-x-2 ${small ? 'p-0' : 'p-4'}`}>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
 
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border">
-        <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-1">{label}</p>
-        <p className={`text-xl font-semibold text-text-light-primary dark:text-text-dark-primary ${className}`}>{value}</p>
+    <div>
+        <p className="text-sm text-secondary-light dark:text-secondary-dark mb-1">{label}</p>
+        <p className={`text-xl font-semibold text-on-surface-light dark:text-on-surface-dark ${className}`}>{value}</p>
     </div>
 );
 
@@ -101,8 +101,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     const handleDeepAnalysisClick = () => {
         setIsButtonLoading(true);
         onStartAnalysis(stock.name, stock.code);
-        // Don't close immediately to show loading state, App.tsx will change view
-        // onClose();
     };
 
     return (
@@ -114,13 +112,13 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className="bg-light-card/90 dark:bg-dark-card/80 backdrop-blur-xl rounded-2xl border border-light-border dark:border-dark-border shadow-2xl w-full max-w-md transform animate-pop-in overflow-hidden"
+                className="bg-surface-light/90 dark:bg-surface-dark/80 backdrop-blur-xl rounded-3xl border border-outline-light dark:border-outline-dark shadow-2xl w-full max-w-lg transform animate-slide-up-fade overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                 <div className="p-6 pb-0">
+                 <div className="p-6">
                     <button 
                         onClick={onClose} 
-                        className="absolute top-4 right-4 text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
+                        className="absolute top-4 right-4 text-secondary-light dark:text-secondary-dark hover:text-on-surface-light dark:hover:text-on-surface-dark bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary z-20"
                         aria-label="關閉視窗"
                     >
                         <CloseIcon className="w-5 h-5" />
@@ -131,8 +129,8 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                            {isPositive ? <TrendUpIcon className="w-6 h-6 text-positive" /> : <TrendDownIcon className="w-6 h-6 text-negative" /> }
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary">{stock.name}</h2>
-                            <p className="text-text-light-secondary dark:text-text-dark-secondary">{stock.code}</p>
+                            <h2 className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{stock.name}</h2>
+                            <p className="text-secondary-light dark:text-secondary-dark">{stock.code}</p>
                         </div>
                     </div>
                     
@@ -150,40 +148,38 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                     </div>
                 </div>
 
-                <div className="max-h-[calc(90vh-320px)] overflow-y-auto px-6 pb-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="max-h-[calc(80vh-350px)] overflow-y-auto px-6 pb-6 space-y-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
+                        <DetailItem label="成交量(張)" value={Math.floor(stock.volume / 1000).toLocaleString()} />
                         <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
                         <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
-                        <DetailItem label="成交量(張)" value={Math.floor(stock.volume / 1000).toLocaleString()} />
                     </div>
 
-                    <div className="mt-6">
-                        <div className="relative p-4 rounded-lg border border-brand-orange/20 dark:border-brand-orange/30 bg-gradient-to-br from-brand-orange/10 to-transparent dark:from-brand-orange/10 dark:to-transparent overflow-hidden shadow-[0_0_25px_rgba(234,88,12,0.15)] dark:shadow-[0_0_40px_rgba(234,88,12,0.2)]">
-                           <div className="absolute -top-10 -right-10 text-brand-orange/10 dark:text-brand-orange/20">
-                                <SparklesIcon className="w-24 h-24 transform rotate-12" />
-                           </div>
-                           <div className="relative z-10">
-                                <div className="flex items-center gap-2 text-brand-orange font-semibold mb-3">
-                                   <SparklesIcon className="w-5 h-5"/>
-                                   <h4>AI 即時洞察</h4>
-                                </div>
-                                 <div className="text-sm min-h-[60px]">
-                                   {isInsightLoading && <LoadingSpinner />}
-                                   {insightError && <p className="text-positive/90">{insightError}</p>}
-                                   {aiInsight && <p className="text-text-light-secondary dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
-                                </div>
+                    <div className="relative p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-transparent dark:from-primary/10 dark:to-transparent overflow-hidden shadow-glow-orange">
+                       <div className="absolute -top-10 -right-10 text-primary/10 dark:text-primary/20">
+                            <SparklesIcon className="w-24 h-24 transform rotate-12" />
+                       </div>
+                       <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-primary font-semibold mb-3">
+                               <SparklesIcon className="w-5 h-5"/>
+                               <h4>AI 即時洞察</h4>
+                            </div>
+                             <div className="text-sm min-h-[60px]">
+                               {isInsightLoading && <LoadingSpinner />}
+                               {insightError && <p className="text-positive/90">{insightError}</p>}
+                               {aiInsight && <p className="text-secondary-light dark:text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 pt-4 bg-slate-100/70 dark:bg-black/20 border-t border-light-border dark:border-dark-border">
+                <div className="p-6 bg-surface-light/70 dark:bg-black/20 border-t border-outline-light dark:border-outline-dark">
                      <button
                         onClick={handleDeepAnalysisClick}
                         disabled={isButtonLoading || !apiKey}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-orange hover:bg-brand-orange/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-wait transform hover:scale-105"
+                        className="w-full flex justify-center items-center gap-2 bg-primary hover:bg-primary/90 text-on-primary font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-tertiary-light dark:disabled:bg-tertiary-dark disabled:cursor-wait transform hover:scale-105"
                     >
                         {isButtonLoading ? (
                            <LoadingSpinner small={true} />

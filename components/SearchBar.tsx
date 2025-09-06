@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface StockListItem {
@@ -108,7 +107,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
             <>
                 {parts.map((part, i) =>
                     regex.test(part) ? (
-                        <strong key={i} className="text-brand-orange font-bold">{part}</strong>
+                        <strong key={i} className="text-primary font-bold">{part}</strong>
                     ) : (
                         <span key={i}>{part}</span>
                     )
@@ -120,8 +119,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
     return (
         <form onSubmit={handleFormSubmit} className="max-w-2xl mx-auto">
             <div className="relative" ref={searchContainerRef}>
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <SearchIcon className="text-text-light-secondary dark:text-text-dark-secondary" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <SearchIcon className="text-secondary-light dark:text-secondary-dark" />
                 </div>
                 <input
                     type="text"
@@ -130,7 +129,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                     onKeyDown={handleKeyDown}
                     onFocus={() => setShowSuggestions(true)}
                     placeholder="搜尋股票 (代號/名稱/縮寫)"
-                    className="w-full pl-9 pr-28 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/80 focus:border-transparent transition-colors shadow-sm text-text-light-primary dark:text-text-dark-primary placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary"
+                    className="w-full pl-11 pr-32 py-3 bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/80 focus:border-transparent transition-colors shadow-sm text-on-surface-light dark:text-on-surface-dark placeholder:text-secondary-light dark:placeholder:text-secondary-dark"
                     autoComplete="off"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
@@ -138,7 +137,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                        <button
                            type="button"
                            onClick={handleClearInput}
-                           className="p-2 text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary transition-colors rounded-full mr-1"
+                           className="p-2 text-secondary-light dark:text-secondary-dark hover:text-on-surface-light dark:hover:text-on-surface-dark transition-colors rounded-full mr-1"
                            aria-label="清除搜尋"
                        >
                            <CloseIcon className="w-5 h-5"/>
@@ -146,7 +145,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                    )}
                     <button
                         type="submit"
-                        className="h-[calc(100%-0.75rem)] my-1.5 mr-1.5 px-5 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg text-sm font-semibold transition-colors transform hover:scale-105"
+                        className="h-[calc(100%-0.75rem)] my-1.5 mr-1.5 px-5 bg-primary hover:bg-primary/90 text-on-primary rounded-lg text-sm font-semibold transition-colors transform hover:scale-105"
                         aria-label="搜尋"
                     >
                         搜尋
@@ -154,21 +153,21 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                 </div>
 
                 {showSuggestions && suggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full mt-2 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-lg overflow-hidden animate-fade-in">
+                    <ul className="absolute z-10 w-full mt-2 bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-xl shadow-xl overflow-hidden animate-fade-in">
                         {suggestions.map((stock, index) => (
                             <li
                                 key={stock.code}
                                 onClick={() => handleSuggestionClick(stock)}
                                 className={`px-4 py-3 cursor-pointer text-left transition-colors ${
                                     index === activeSuggestionIndex 
-                                    ? 'bg-brand-orange/10 dark:bg-brand-orange/20' 
-                                    : 'hover:bg-slate-100 dark:hover:bg-white/5'
+                                    ? 'bg-primary/10' 
+                                    : 'hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <div className="font-semibold text-text-light-primary dark:text-text-dark-primary">
+                                <div className="font-semibold text-on-surface-light dark:text-on-surface-dark">
                                     {highlightMatch(stock.name)}
                                 </div>
-                                <div className="text-sm text-text-light-secondary dark:text-text-dark-secondary">
+                                <div className="text-sm text-secondary-light dark:text-secondary-dark">
                                     {highlightMatch(stock.code)}
                                 </div>
                             </li>

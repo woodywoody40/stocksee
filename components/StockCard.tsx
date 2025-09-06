@@ -18,8 +18,6 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement> & { isFilled: boolean }> 
 const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchlist, onCardClick }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
-    const glowStyle = isPositive ? 'shadow-glow-positive' : 'shadow-glow-negative';
-    
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
 
     const handleStarClick = (e: React.MouseEvent) => {
@@ -29,19 +27,18 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
 
     return (
         <div 
-            className={`relative bg-light-card dark:bg-dark-card backdrop-blur-md border border-light-border dark:border-dark-border rounded-xl p-4 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden group hover:-translate-y-1.5 dark:${glowStyle} shadow-md dark:shadow-none shadow-slate-200`}
+            className={`relative bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1 hover:shadow-xl shadow-lg shadow-gray-100 dark:shadow-none`}
             onClick={() => onCardClick(stock)}
         >
-             <div className={`absolute top-0 right-0 h-full w-2/3 bg-gradient-to-l ${isPositive ? 'from-positive/10 dark:from-positive/15' : 'from-negative/10 dark:from-negative/15'} to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-300`}></div>
             <div className="relative z-10">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="font-bold text-lg text-text-light-primary dark:text-text-dark-primary">{stock.name}</h3>
-                        <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary">{stock.code}</p>
+                        <h3 className="font-bold text-lg text-on-surface-light dark:text-on-surface-dark">{stock.name}</h3>
+                        <p className="text-sm text-secondary-light dark:text-secondary-dark">{stock.code}</p>
                     </div>
                     <button 
                         onClick={handleStarClick}
-                        className="text-text-light-secondary dark:text-text-dark-secondary hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
+                        className="text-secondary-light dark:text-secondary-dark hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
                         aria-label={isWatched ? '從關注列表移除' : '加入關注列表'}
                     >
                         <StarIcon isFilled={isWatched} className={`w-6 h-6 ${isWatched ? 'text-brand-gold' : ''}`} />

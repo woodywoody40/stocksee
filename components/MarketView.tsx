@@ -10,15 +10,15 @@ import SearchBar from './SearchBar';
 
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center p-12 space-x-2">
-        <div className="w-3 h-3 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
-        <div className="w-3 h-3 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-        <div className="w-3 h-3 bg-brand-gold rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h2 className="text-2xl font-bold mb-6 text-text-light-primary dark:text-text-dark-primary tracking-wide flex items-center gap-3">
-        <span className="w-1.5 h-6 bg-brand-gold rounded-full"></span>
+    <h2 className="text-2xl font-bold mb-6 text-on-background-light dark:text-on-background-dark tracking-wide flex items-center gap-3">
+        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
         {children}
     </h2>
 );
@@ -142,13 +142,13 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     }, []);
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
-    const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code));
+    const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code) && !watchlist.includes(stock.code));
     const searchResultStocks = searchTerm ? stocks.filter(stock => searchCodes.includes(stock.code)) : [];
 
     const renderStockGrid = (stockList: Stock[]) => (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             {stockList.map((stock, index) => (
-                <div key={stock.code} className="animate-staggered-fade-in" style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}>
+                <div key={stock.code} className="animate-stagger-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                     <StockCard
                         stock={stock}
                         isWatched={watchlist.includes(stock.code)}
@@ -175,7 +175,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                             {searchResultStocks.length > 0 ? (
                                 renderStockGrid(searchResultStocks)
                             ) : (
-                                <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">找不到符合「{searchTerm}」的股票。</p>
+                                <p className="text-secondary-light dark:text-secondary-dark text-center py-8">找不到符合「{searchTerm}」的股票。</p>
                             )}
                         </section>
                     ) : (
@@ -192,7 +192,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                                 {marketStocks.length > 0 ? (
                                    renderStockGrid(marketStocks)
                                 ) : (
-                                   <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">
+                                   <p className="text-secondary-light dark:text-secondary-dark text-center py-8">
                                        無法載入市場焦點。
                                    </p>
                                 )}

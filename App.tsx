@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import MarketView from './components/MarketView';
@@ -54,7 +53,7 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen font-sans bg-light-bg dark:bg-dark-bg">
+    <div className="min-h-screen font-sans bg-background-light dark:bg-background-dark">
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
         {activeTab === Tab.Market && <MarketView apiKey={apiKey} onStartAnalysis={handleStartAnalysis} />}
@@ -68,7 +67,7 @@ const App: React.FC = () => {
           />
         )}
       </main>
-       <footer className="text-center p-6 text-xs text-text-light-secondary dark:text-text-dark-secondary border-t border-light-border dark:border-dark-border mt-8">
+       <footer className="text-center p-6 text-xs text-secondary-light dark:text-secondary-dark mt-8">
         股見 - 台灣股市洞察 © 2025. All data is for informational purposes only.
       </footer>
     </div>

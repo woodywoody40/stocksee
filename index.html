@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtdGluZWpvaW49InJvdW5kIi8+PC9zdmc+" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>股見 - 台灣股市洞察</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#18181b" />
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtdGluZWpvaW49InJvdW5kIi8+PC9zdmc+">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -27,58 +27,76 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              'brand-orange': '#ea580c',
-              'brand-gold': '#f59e0b',
-
-              // Dark Theme
-              'dark-bg': '#18181b',
-              'dark-card': '#27272a',
-              'dark-border': 'rgba(255, 255, 255, 0.1)',
-              'text-dark-primary': '#f4f4f5',
-              'text-dark-secondary': '#a1a1aa',
-              'text-dark-tertiary': '#52525b',
+              primary: '#ea580c', // Brand Orange
               
-              // Light Theme
-              'light-bg': '#FBF9F6',
-              'light-card': '#ffffff',
-              'light-border': '#e5e7eb',
-              'text-light-primary': '#1f2937',
-              'text-light-secondary': '#6b7280',
-              'text-light-tertiary': '#9ca3af',
+              background: {
+                light: '#f8f9fa', // Off-white
+                dark: '#111113',  // Near black
+              },
+              surface: {
+                light: '#ffffff', // White
+                dark: '#1c1c1e',  // Dark grey
+              },
+              outline: {
+                light: '#e5e7eb', // Light grey border
+                dark: 'rgba(255, 255, 255, 0.1)', // Translucent white border
+              },
 
-              'positive': '#ef4444',
-              'positive-glow': 'rgba(239, 68, 68, 0.4)',
-              'negative': '#22c55e',
-              'negative-glow': 'rgba(34, 197, 94, 0.4)',
-              'neutral': '#a1a1aa',
+              'on-primary': '#ffffff',
+              'on-background': {
+                light: '#1f2937', // Dark grey text
+                dark: '#f4f4f5',  // Off-white text
+              },
+              'on-surface': {
+                light: '#1f2937',
+                dark: '#f4f4f5',
+              },
+              secondary: {
+                light: '#6b7280', // Medium grey text
+                dark: '#a1a1aa',  // Light grey text
+              },
+              tertiary: {
+                light: '#9ca3af',
+                dark: '#52525b',
+              },
+
+              positive: '#ef4444', // Red
+              negative: '#22c55e', // Green
+              'brand-gold': '#f59e0b', // Kept for specific highlights
+            },
+            borderRadius: {
+              'xl': '0.75rem',
+              '2xl': '1rem',
+              '3xl': '1.5rem',
             },
             boxShadow: {
-              'glow-positive': '0 0 20px rgba(239, 68, 68, 0.3)',
-              'glow-negative': '0 0 20px rgba(34, 197, 94, 0.3)',
+              'glow-orange': '0 0 30px rgba(234, 88, 12, 0.25)',
+              'glow-positive': '0 0 20px rgba(239, 68, 68, 0.2)',
+              'glow-negative': '0 0 20px rgba(34, 197, 94, 0.2)',
             },
             keyframes: {
               'fade-in': {
-                '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              'slide-up-fade': {
+                '0%': { opacity: '0', transform: 'translateY(16px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
               'backdrop-fade-in': {
                 '0%': { opacity: '0' },
                 '100%': { opacity: '1' },
               },
-              'pop-in': {
-                '0%': { opacity: '0', transform: 'scale(0.95)' },
-                '100%': { opacity: '1', transform: 'scale(1)' },
-              },
-              'staggered-fade-in': {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
+              'stagger-in': {
+                 '0%': { opacity: '0', transform: 'translateY(10px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
+              }
             },
             animation: {
-              'fade-in': 'fade-in 0.5s ease-out forwards',
+              'fade-in': 'fade-in 0.3s ease-out forwards',
+              'slide-up-fade': 'slide-up-fade 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
               'backdrop-fade-in': 'backdrop-fade-in 0.3s ease-out',
-              'pop-in': 'pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
-              'staggered-fade-in': 'staggered-fade-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+              'stagger-in': 'stagger-in 0.5s ease-out forwards',
             },
           },
         },
@@ -95,7 +113,7 @@
 }
 </script>
 </head>
-  <body class="bg-light-bg text-light-primary dark:bg-dark-bg dark:text-dark-primary font-sans transition-colors duration-300">
+  <body class="bg-background-light text-on-background-light dark:bg-background-dark dark:text-on-background-dark font-sans transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
