@@ -3,9 +3,10 @@ import { HistoricalDataPoint } from '../types';
 
 interface StockChartProps {
     priceData: HistoricalDataPoint[];
+    color?: string;
 }
 
-const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
+const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const tooltipGroupRef = useRef<SVGGElement>(null);
     const tooltipLineRef = useRef<SVGLineElement>(null);
@@ -21,9 +22,9 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
     }
   
     const reversedData = useMemo(() => [...priceData].reverse(), [priceData]);
-    const priceColor = reversedData[reversedData.length - 1].close >= reversedData[0].close ? '#ef4444' : '#22c55e';
-    const gradientColor = reversedData[reversedData.length - 1].close >= reversedData[0].close ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
-    const gradientId = `chart-gradient-${priceColor.replace('#', '')}`;
+    const priceColor = color || (reversedData[reversedData.length - 1].close >= reversedData[0].close ? '#ef4444' : '#22c55e');
+    const gradientColor = color ? color.replace(')', ', 0.2)').replace('rgb', 'rgba') : (reversedData[reversedData.length - 1].close >= reversedData[0].close ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)');
+    const gradientId = `chart-gradient-${priceColor.replace(/[^a-zA-Z0-9]/g, '')}`;
 
     const svgWidth = 300;
     const svgHeight = 100;
@@ -38,7 +39,7 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
     const scaleY = useCallback((value: number) => {
         if (valueRange === 0) return svgHeight / 2;
         return (svgHeight - paddingY) - ((value - minVal) / valueRange) * chartHeight;
-    }, [valueRange, svgHeight, chartHeight, paddingY]);
+    }, [valueRange, svgHeight, chartHeight, paddingY, minVal]);
 
     const dataLength = reversedData.length;
     const xStep = svgWidth / (dataLength > 1 ? dataLength - 1 : 1);
@@ -61,16 +62,13 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
         
         const svgRect = svgRef.current.getBoundingClientRect();
         
-        // Fix 1: Scale mouse/touch coordinates to the SVG's coordinate system
         const svgX = (clientX - svgRect.left) * (svgWidth / svgRect.width);
 
-        // Fix 2: Clamp index to prevent out-of-bounds, fixing edge interaction
         const index = Math.max(0, Math.min(points.length - 1, Math.round(svgX / xStep)));
         
         const point = points[index];
         if (!point) return;
 
-        // --- Direct DOM Manipulation for Performance ---
         tooltipGroupRef.current.style.opacity = '1';
         tooltipTextRef.current.style.opacity = '1';
 
@@ -79,14 +77,13 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
         tooltipCircleRef.current.setAttribute('cx', `${point.x}`);
         tooltipCircleRef.current.setAttribute('cy', `${point.y}`);
 
-        tooltipTextRef.current.innerHTML = `<div>${point.data.date}</div><div class="font-bold">${point.data.close.toFixed(2)}</div>`;
+        tooltipTextRef.current.innerHTML = `<div class="text-center">${point.data.date}</div><div class="font-bold text-center">${point.data.close.toFixed(2)}</div>`;
         
-        // Position tooltip text box intelligently
         const onScreenX = (point.x / svgWidth) * svgRect.width;
         const tooltipWidth = tooltipTextRef.current.offsetWidth;
-        let textX = onScreenX + 10;
-        if (tooltipWidth > 0 && textX + tooltipWidth > svgRect.width) {
-            textX = onScreenX - tooltipWidth - 10;
+        let textX = onScreenX + 15; // Position to the right by default
+        if (tooltipWidth > 0 && textX + tooltipWidth > svgRect.width - 5) {
+            textX = onScreenX - tooltipWidth - 15; // Flip to the left
         }
         tooltipTextRef.current.style.transform = `translateX(${textX}px)`;
 
@@ -99,15 +96,21 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
         }
     }, []);
 
-    const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    const handleMouseMove = useCallback((event: React.MouseEvent<SVGSVGElement>) => {
         handleInteraction(event.clientX);
-    };
+    },[handleInteraction]);
 
-    const handleTouchMove = (event: React.TouchEvent<SVGSVGElement>) => {
+    const handleTouchMove = useCallback((event: React.TouchEvent<SVGSVGElement>) => {
         if (event.touches.length > 0) {
             handleInteraction(event.touches[0].clientX);
         }
-    };
+    }, [handleInteraction]);
+    
+    const handleTouchStart = useCallback((event: React.TouchEvent<SVGSVGElement>) => {
+        if (event.touches.length > 0) {
+            handleInteraction(event.touches[0].clientX);
+        }
+    }, [handleInteraction]);
 
     return (
         <div className="relative w-full h-full cursor-crosshair">
@@ -118,7 +121,7 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
                 preserveAspectRatio="none"
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleInteractionEnd}
-                onTouchStart={handleTouchMove}
+                onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleInteractionEnd}
             >
@@ -166,7 +169,7 @@ const StockChart: React.FC<StockChartProps> = ({ priceData }) => {
             
             <div
                 ref={tooltipTextRef}
-                className="absolute top-0 bg-black/70 text-white text-xs rounded-md p-2 pointer-events-none"
+                className="absolute top-2 bg-black/70 text-white text-xs rounded-md p-2 pointer-events-none z-10"
                 style={{ opacity: 0, transition: 'opacity 0.1s ease, transform 0.1s ease' }}
             >
                 {/* Content is set via innerHTML */}

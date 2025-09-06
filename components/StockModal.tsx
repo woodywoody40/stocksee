@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { Stock, HistoricalDataPoint } from '../types';
 import { getAIStockInsight } from '../services/geminiService';
@@ -37,7 +38,7 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
-    <div className={`flex justify-center items-center space-x-2 ${small ? 'p-0' : 'p-4'}`}>
+    <div className={`flex justify-center items-center space-x-2 ${small ? '' : 'p-4'}`}>
         <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
         <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
         <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
@@ -45,20 +46,20 @@ const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
 );
 
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div className="bg-surface-dark-alt/50 rounded-lg p-3 text-center">
-        <p className="text-xs text-secondary-dark mb-1">{label}</p>
-        <p className={`text-base font-semibold text-on-surface-dark ${className}`}>{value}</p>
+    <div className="bg-surface-dark-alt/50 rounded-xl p-3 text-center">
+        <p className="text-sm text-secondary-dark mb-1.5">{label}</p>
+        <p className={`text-lg font-semibold text-on-surface-dark ${className}`}>{value}</p>
     </div>
 );
 
 const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
+    const chartColor = isPositive ? '#ef4444' : '#22c55e';
     
     const [aiInsight, setAiInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
     const [insightError, setInsightError] = useState<string | null>(null);
-    const [isButtonLoading, setIsButtonLoading] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     
     const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
@@ -93,7 +94,13 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             setHistoricalData(null);
             try {
                 const data = await fetchHistoricalData(stock.code);
-                setHistoricalData(data);
+                const todayPoint: HistoricalDataPoint = {
+                    date: new Date().toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+                    close: stock.price,
+                };
+                
+                const combinedData = data ? [todayPoint, ...data.filter(d => d.date !== todayPoint.date)] : [todayPoint];
+                setHistoricalData(combinedData);
             } catch (err) {
                  if (err instanceof Error) {
                     setHistoryError(err.message);
@@ -105,7 +112,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             }
         };
         loadHistoricalData();
-    }, [stock.code]);
+    }, [stock.code, stock.price]);
 
     useEffect(() => {
         const fetchInsight = async () => {
@@ -122,7 +129,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 if (err instanceof Error) {
                     setInsightError(err.message);
                 } else {
-                    setInsightError("發生未知錯誤");
+                    setInsightError("無法生成 AI 洞察，請稍後再試。");
                 }
             } finally {
                 setIsInsightLoading(false);
@@ -133,7 +140,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     }, [stock, apiKey]);
     
     const handleDeepAnalysisClick = () => {
-        setIsButtonLoading(true);
         onStartAnalysis(stock.name, stock.code);
     };
 
@@ -147,52 +153,52 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-md flex flex-col overflow-hidden backface-hidden dark ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
+                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-md flex flex-col overflow-hidden backface-hidden dark max-h-[85vh] ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
                 style={{ transformStyle: 'preserve-3d' }}
                 onClick={(e) => e.stopPropagation()}
                 onAnimationEnd={handleAnimationEnd}
             >
-                <div className="flex-shrink-0 p-6 pb-0">
-                    <button 
-                        onClick={handleClose} 
-                        className="absolute top-4 right-4 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
-                        aria-label="關閉視窗"
-                    >
-                        <CloseIcon className="w-5 h-5" />
-                    </button>
+                <div className="flex-grow overflow-y-auto modal-scrollbar p-6 space-y-6">
+                    <div className="relative">
+                        <button 
+                            onClick={handleClose} 
+                            className="absolute -top-2 -right-2 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
+                            aria-label="關閉視窗"
+                        >
+                            <CloseIcon className="w-5 h-5" />
+                        </button>
 
-                    <div id="stock-modal-title" className="flex items-center gap-3 mb-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
-                           {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : <ArrowDownIcon className="w-5 h-5 text-negative" /> }
+                        <div id="stock-modal-title" className="flex items-center gap-3 mb-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
+                               {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : <ArrowDownIcon className="w-5 h-5 text-negative" /> }
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-on-surface-dark">{stock.name}</h2>
+                                <p className="text-sm text-secondary-dark">{stock.code}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-on-surface-dark">{stock.name}</h2>
-                            <p className="text-sm text-secondary-dark">{stock.code}</p>
+                        
+                        <div className="my-4 text-left">
+                            <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
+                            <div className={`text-base font-semibold ${priceColor} mt-1 flex items-center`}>
+                                <span>{isPositive ? '▲' : '▼'}</span>
+                                <span className="ml-1">{stock.change.toFixed(2)}</span>
+                                <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
+                            </div>
+                        </div>
+                        
+                        <div className="h-40 my-4 -mx-6">
+                            {isHistoryLoading ? (
+                                 <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
+                            ) : historyError ? (
+                                 <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
+                            ) : historicalData ? (
+                                 <StockChart priceData={historicalData} color={chartColor} />
+                            ) : null}
                         </div>
                     </div>
-                    
-                    <div className="my-4 text-left">
-                        <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
-                        <div className={`text-base font-semibold ${priceColor} mt-1`}>
-                            <span>{isPositive ? '▲' : '▼'}</span>
-                            <span> {stock.change.toFixed(2)}</span>
-                            <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
-                        </div>
-                    </div>
-                    
-                    <div className="h-40 my-4">
-                        {isHistoryLoading ? (
-                             <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
-                        ) : historyError ? (
-                             <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
-                        ) : historicalData ? (
-                             <StockChart priceData={historicalData} />
-                        ) : null}
-                    </div>
-                </div>
 
-                <div className="flex-grow overflow-y-auto modal-scrollbar px-6 pb-6 space-y-6">
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
                         <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
@@ -210,25 +216,19 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                                <h4>AI 即時洞察</h4>
                             </div>
                              <div className="text-sm min-h-[50px]">
-                               {isInsightLoading && <LoadingSpinner />}
-                               {insightError && <p className="text-positive/90">{insightError}</p>}
-                               {aiInsight && <p className="text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                               {isInsightLoading ? <LoadingSpinner small /> :
+                               insightError ? <p className="text-positive/90">{insightError}</p> :
+                               aiInsight && <p className="text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex-shrink-0 p-5 bg-black/20 border-t border-outline-dark">
-                     <button
+                    <button
                         onClick={handleDeepAnalysisClick}
-                        disabled={isButtonLoading || !apiKey}
-                        className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-wait transform hover:scale-105"
+                        disabled={!apiKey}
+                        className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-not-allowed transform hover:scale-105"
                     >
-                        {isButtonLoading ? (
-                           <LoadingSpinner small={true} />
-                        ) : (
-                           <SparklesIcon className="w-5 h-5" />
-                        )}
+                        <SparklesIcon className="w-5 h-5" />
                         一鍵深度洞察
                     </button>
                 </div>
