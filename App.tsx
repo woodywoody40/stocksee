@@ -4,15 +4,15 @@ import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
 import { Tab } from './types';
 import { fetchNewsWithGemini } from './services/geminiService';
-import { useTheme } from './hooks/useTheme';
+import useLocalStorage from './hooks/useLocalStorage';
 
 
 const App: React.FC = () => {
-  const [theme] = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Market);
   const [analysisTarget, setAnalysisTarget] = useState<string | null>(null);
   const [analysisContent, setAnalysisContent] = useState<string | null>(null);
   const [isFetchingNews, setIsFetchingNews] = useState(false);
+  const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
   
   const handleTabChange = (tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
@@ -23,13 +23,19 @@ const App: React.FC = () => {
   }
 
   const handleStartAnalysis = async (stockName: string, stockCode: string) => {
+    if (!apiKey) {
+      alert("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
+      setActiveTab(Tab.AI_Analysis); // Switch to AI tab to show settings
+      return;
+    }
+
     setAnalysisTarget(stockName);
     setActiveTab(Tab.AI_Analysis);
     setIsFetchingNews(true);
     setAnalysisContent(null);
 
     try {
-      const articleText = await fetchNewsWithGemini(stockName, stockCode);
+      const articleText = await fetchNewsWithGemini(apiKey, stockName, stockCode);
       
       if (articleText.includes('//NO_NEWS_FOUND//')) {
         setAnalysisContent(`//ERROR// AI 找不到關於「${stockName}」的即時新聞。`);
@@ -48,17 +54,14 @@ const App: React.FC = () => {
 
 
   return (
-    <div 
-      className={`min-h-screen font-sans bg-light-bg dark:bg-dark-bg bg-[length:200%_200%] ${theme === 'dark' ? 'animate-aurora' : ''}`}
-      style={theme === 'dark' ? {
-        backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 35%), radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 35%), radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 35%)'
-      } : {}}
-    >
+    <div className="min-h-screen font-sans bg-light-bg dark:bg-dark-bg">
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
-        {activeTab === Tab.Market && <MarketView onStartAnalysis={handleStartAnalysis} />}
+        {activeTab === Tab.Market && <MarketView apiKey={apiKey} onStartAnalysis={handleStartAnalysis} />}
         {activeTab === Tab.AI_Analysis && (
           <AiAnalysisView 
+            apiKey={apiKey}
+            setApiKey={setApiKey}
             analysisTarget={analysisTarget} 
             isFetchingNews={isFetchingNews}
             initialContent={analysisContent}

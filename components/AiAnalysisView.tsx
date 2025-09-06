@@ -22,17 +22,29 @@ interface AiAnalysisViewProps {
     analysisTarget: string | null;
     isFetchingNews: boolean;
     initialContent: string | null;
+    apiKey: string;
+    setApiKey: (key: string) => void;
 }
 
-const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent }) => {
+const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent, apiKey, setApiKey }) => {
     const [newsText, setNewsText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
-
+    const [inputApiKey, setInputApiKey] = useState(apiKey);
+    
     const analysisTriggeredForContent = useRef<string | null>(null);
 
+    const handleSaveKey = () => {
+        setApiKey(inputApiKey);
+    };
+
     const handleAnalyze = useCallback(async (contentToAnalyze?: string) => {
+        if (!apiKey) {
+            setError('請先設定您的 Google Gemini API 金鑰。');
+            return;
+        }
+
         const text = contentToAnalyze || newsText;
         if (!text.trim()) {
             setError('請先貼上或等待新聞內容載入。');
@@ -43,7 +55,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
         setError(null);
         setResult(null);
         try {
-            const analysisResult = await analyzeNews(text);
+            const analysisResult = await analyzeNews(apiKey, text);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
@@ -54,7 +66,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
         } finally {
             setIsLoading(false);
         }
-    }, [newsText]);
+    }, [newsText, apiKey]);
 
     useEffect(() => {
         setResult(null);
@@ -90,7 +102,33 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     }
     
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-8">
+             <div className="bg-light-card dark:bg-dark-card p-4 sm:p-5 rounded-xl border border-light-border dark:border-dark-border shadow-sm">
+                <h3 className="text-base font-semibold text-text-light-primary dark:text-text-dark-primary">Gemini API 金鑰設定</h3>
+                <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-1">
+                    金鑰將安全地儲存在您的瀏覽器中，不會上傳至任何伺服器。 
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-orange/90 hover:underline">
+                        點此獲取金鑰
+                    </a>
+                </p>
+                <div className="relative mt-3">
+                    <input
+                        type="password"
+                        value={inputApiKey}
+                        onChange={(e) => setInputApiKey(e.target.value)}
+                        placeholder="在此貼上您的 API 金鑰"
+                        className="w-full pl-3 pr-28 py-2.5 bg-slate-100/70 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-orange/80 focus:outline-none transition dark:text-text-dark-primary dark:placeholder-text-dark-secondary"
+                        aria-label="Gemini API Key Input"
+                    />
+                    <button
+                        onClick={handleSaveKey}
+                        className="absolute inset-y-1.5 right-1.5 flex justify-center items-center w-24 rounded-md text-sm font-semibold bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 transition-colors"
+                    >
+                       儲存金鑰
+                    </button>
+                </div>
+            </div>
+
             <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-light-border dark:border-dark-border shadow-lg dark:shadow-2xl">
                  <div className="flex justify-between items-start mb-6">
                     <div>
@@ -113,21 +151,22 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                             ? `在此貼上或編輯關於「${analysisTarget}」的新聞文章全文...`
                             : "在此貼上新聞文章全文..."
                         }
-                        className="w-full h-48 p-4 bg-slate-100 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition resize-y"
+                        className="w-full h-48 p-4 bg-slate-100 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-orange/80 focus:outline-none transition resize-y dark:text-text-dark-primary dark:placeholder-text-dark-secondary"
                         disabled={isLoading}
                     />
                     <button
                         onClick={() => handleAnalyze()}
-                        disabled={isLoading || !newsText.trim()}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+                        disabled={isLoading || !newsText.trim() || !apiKey}
+                        className="w-full flex justify-center items-center gap-2 bg-brand-orange hover:bg-brand-orange/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
                     >
                         {isLoading ? <><LoadingIcon /> 分析中...</> : '開始分析'}
                     </button>
+                    {!apiKey && <p className="text-center text-sm text-positive/90">請先設定 API 金鑰以啟用分析功能。</p>}
                 </div>
             </div>
 
             {error && (
-                <div className="mt-6 bg-negative/20 border border-negative/50 text-negative p-4 rounded-lg animate-fade-in">
+                <div className="mt-6 bg-positive/20 border border-positive/50 text-positive p-4 rounded-lg animate-fade-in">
                     <h3 className="font-bold">分析失敗</h3>
                     <p>{error}</p>
                 </div>

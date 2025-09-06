@@ -1,13 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from '../types';
 
-// Check for API key existence at the module level for early failure.
-if (!process.env.API_KEY) {
-    throw new Error("Missing Google Gemini API key in environment variables.");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -28,7 +21,12 @@ const ANALYSIS_SCHEMA = {
 };
 
 
-export const analyzeNews = async (newsText: string): Promise<AnalysisResult> => {
+export const analyzeNews = async (apiKey: string, newsText: string): Promise<AnalysisResult> => {
+    if (!apiKey) {
+        throw new Error("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `你是一位專精於台灣股市的頂尖財經分析師。請僅根據以下提供的新聞文章，以繁體中文進行分析，並嚴格按照指定的 JSON 格式回傳結果。
 
 分析要求：
@@ -61,7 +59,7 @@ ${newsText}
         console.error("Error analyzing news with Gemini API:", error);
         if (error instanceof Error) {
            if (error.message.includes('API key not valid')) {
-               throw new Error('環境變數中的 API 金鑰無效，請檢查設定。');
+               throw new Error('您提供的 API 金鑰無效，請檢查後再試。');
            }
            throw new Error(`AI 分析失敗: ${error.message}`);
         }
@@ -71,11 +69,17 @@ ${newsText}
 
 /**
  * Uses the Gemini API to find and return the text of a recent news article for a given stock.
+ * @param apiKey The user's Google Gemini API key.
  * @param stockName The name of the stock.
  * @param stockCode The code of the stock.
  * @returns A promise that resolves to the full text of the news article.
  */
-export const fetchNewsWithGemini = async (stockName: string, stockCode: string): Promise<string> => {
+export const fetchNewsWithGemini = async (apiKey: string, stockName: string, stockCode: string): Promise<string> => {
+    if (!apiKey) {
+        throw new Error("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `你是一位頂尖的財經新聞專家。請使用你的網路搜尋能力，找出關於台灣股票「${stockName} (${stockCode})」今天或近期最重要的一篇財經新聞。
 
 找到後，請以客觀中立的語氣，「摘要」這篇新聞的「核心內容」。你的回覆應該只包含新聞摘要本身，不要有任何前言或評論。
@@ -95,7 +99,7 @@ export const fetchNewsWithGemini = async (stockName: string, stockCode: string):
     } catch (error) {
          console.error("Error fetching news with Gemini API:", error);
         if (error instanceof Error && error.message.includes('API key not valid')) {
-            throw new Error('環境變數中的 API 金鑰無效或已過期。');
+            throw new Error('您提供的 API 金鑰無效或已過期。');
         }
         throw new Error("AI 搜尋新聞時發生錯誤，請稍後再試。");
     }
@@ -104,11 +108,17 @@ export const fetchNewsWithGemini = async (stockName: string, stockCode: string):
 
 /**
  * Generates a real-time AI insight summary for a specific stock.
+ * @param apiKey The user's Google Gemini API key.
  * @param stockName - The name of the stock.
  * @param stockCode - The code of the stock.
  * @returns A promise that resolves to a string containing the AI-generated insight.
  */
-export const getAIStockInsight = async (stockName: string, stockCode: string): Promise<string> => {
+export const getAIStockInsight = async (apiKey: string, stockName: string, stockCode: string): Promise<string> => {
+    if (!apiKey) {
+        throw new Error("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const prompt = `你是一位頂尖的台灣股市分析師。請使用你的網路搜尋能力，針對股票「${stockName} (${stockCode})」，提供一份簡潔、中立、專業的即時市場洞察。
     
     內容需包含：
@@ -131,7 +141,7 @@ export const getAIStockInsight = async (stockName: string, stockCode: string): P
     } catch (error) {
         console.error("Error getting stock insight with Gemini API:", error);
         if (error instanceof Error && error.message.includes('API key not valid')) {
-            throw new Error('環境變數中的 API 金鑰無效或已過期。');
+            throw new Error('您提供的 API 金鑰無效或已過期。');
         }
         throw new Error("無法生成 AI 洞察，請稍後再試。");
     }

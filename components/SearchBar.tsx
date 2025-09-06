@@ -27,11 +27,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="輸入股票代號搜尋 (例如: 2330 2317)"
-                    className="w-full pl-12 pr-24 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/80 focus:border-transparent transition-colors shadow-sm"
+                    className="w-full pl-12 pr-24 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/80 focus:border-transparent transition-colors shadow-sm dark:text-text-dark-primary dark:placeholder-text-dark-secondary"
                 />
                  <button
                     type="submit"
-                    className="absolute inset-y-0 right-2 my-1.5 px-5 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-lg text-sm font-semibold transition-colors transform hover:scale-105"
+                    className="absolute inset-y-0 right-2 my-1.5 px-5 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg text-sm font-semibold transition-colors transform hover:scale-105"
                     aria-label="搜尋"
                 >
                     搜尋

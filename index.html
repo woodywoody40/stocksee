@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>股見 - 台灣股市洞察</title>
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#111113" />
+    <meta name="theme-color" content="#18181b" />
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,30 +27,30 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              'brand-blue': '#6366f1',   // Indigo 500
-              'brand-gold': '#f59e0b',   // Amber 500
+              'brand-orange': '#ea580c',
+              'brand-gold': '#f59e0b',
 
               // Dark Theme
-              'dark-bg': '#111113',
-              'dark-card': 'rgba(28, 28, 31, 0.6)',
+              'dark-bg': '#18181b',
+              'dark-card': '#27272a',
               'dark-border': 'rgba(255, 255, 255, 0.1)',
-              'text-dark-primary': '#f4f4f5', // Zinc 100
-              'text-dark-secondary': '#a1a1aa', // Zinc 400
-              'text-dark-tertiary': '#52525b', // Zinc 600
+              'text-dark-primary': '#f4f4f5',
+              'text-dark-secondary': '#a1a1aa',
+              'text-dark-tertiary': '#52525b',
               
               // Light Theme
-              'light-bg': '#f8f9fa',
+              'light-bg': '#FBF9F6',
               'light-card': '#ffffff',
               'light-border': '#e5e7eb',
               'text-light-primary': '#1f2937',
               'text-light-secondary': '#6b7280',
               'text-light-tertiary': '#9ca3af',
 
-              'positive': '#ef4444',     // Red 500
+              'positive': '#ef4444',
               'positive-glow': 'rgba(239, 68, 68, 0.4)',
-              'negative': '#22c55e',     // Green 500
+              'negative': '#22c55e',
               'negative-glow': 'rgba(34, 197, 94, 0.4)',
-              'neutral': '#a1a1aa',      // Zinc 400
+              'neutral': '#a1a1aa',
             },
             boxShadow: {
               'glow-positive': '0 0 20px rgba(239, 68, 68, 0.3)',
@@ -73,17 +73,12 @@
                 '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
-              'aurora': {
-                'from': { backgroundPosition: '0% 50%' },
-                'to': { backgroundPosition: '100% 50%' },
-              }
             },
             animation: {
               'fade-in': 'fade-in 0.5s ease-out forwards',
               'backdrop-fade-in': 'backdrop-fade-in 0.3s ease-out',
               'pop-in': 'pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
               'staggered-fade-in': 'staggered-fade-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
-              'aurora': 'aurora 20s ease-in-out infinite alternate',
             },
           },
         },

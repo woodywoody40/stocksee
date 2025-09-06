@@ -5,6 +5,7 @@ import { getAIStockInsight } from '../services/geminiService';
 
 interface StockModalProps {
     stock: Stock;
+    apiKey: string;
     onClose: () => void;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
@@ -49,7 +50,7 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
     </div>
 );
 
-const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis }) => {
+const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
@@ -61,6 +62,11 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
 
     useEffect(() => {
         const fetchInsight = async () => {
+            if (!apiKey) {
+                setInsightError("請先至「AI 新聞分析」頁面設定 API 金鑰。");
+                return;
+            }
+
             const cacheKey = `stock-insight-${stock.code}`;
             const cachedItem = sessionStorage.getItem(cacheKey);
             if (cachedItem) {
@@ -75,7 +81,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
             setIsInsightLoading(true);
             setInsightError(null);
             try {
-                const insight = await getAIStockInsight(stock.name, stock.code);
+                const insight = await getAIStockInsight(apiKey, stock.name, stock.code);
                 setAiInsight(insight);
                 sessionStorage.setItem(cacheKey, JSON.stringify({ insight, timestamp: Date.now() }));
             } catch (err) {
@@ -90,7 +96,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
         };
 
         fetchInsight();
-    }, [stock]);
+    }, [stock, apiKey]);
     
     const handleDeepAnalysisClick = () => {
         setIsButtonLoading(true);
@@ -114,7 +120,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                  <div className="p-6 pb-0">
                     <button 
                         onClick={onClose} 
-                        className="absolute top-4 right-4 text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue z-20"
+                        className="absolute top-4 right-4 text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
                         aria-label="關閉視窗"
                     >
                         <CloseIcon className="w-5 h-5" />
@@ -176,8 +182,8 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                 <div className="p-6 pt-4 bg-slate-100/70 dark:bg-black/20 border-t border-light-border dark:border-dark-border">
                      <button
                         onClick={handleDeepAnalysisClick}
-                        disabled={isButtonLoading}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-wait transform hover:scale-105"
+                        disabled={isButtonLoading || !apiKey}
+                        className="w-full flex justify-center items-center gap-2 bg-brand-orange hover:bg-brand-orange/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-wait transform hover:scale-105"
                     >
                         {isButtonLoading ? (
                            <LoadingSpinner small={true} />

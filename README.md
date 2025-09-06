@@ -14,7 +14,7 @@
 
 ## 🛠️ 技術棧
 
--   **前端**: React, TypeScript, Tailwind CSS, Vite
+-   **前端**: React, TypeScript, Tailwind CSS
 -   **AI 模型**: Google Gemini API (`gemini-2.5-flash`)
 
 ## 🚀 部署與設定
@@ -26,7 +26,7 @@
 本應用的 AI 新聞分析功能需要使用 Google Gemini API。您需要在應用程式的「AI 新聞分析」頁面中，輸入您自己的 Google Gemini API 金鑰。
 
 1.  前往 [Google AI Studio](https://aistudio.google.com/app/apikey) 取得您的 API 金鑰。
-2.  將金鑰複製並貼到應用程式指定的輸入框中。
-3.  您的金鑰將會被安全地儲存在您的瀏覽器本地儲存空間 (Local Storage) 中，方便您下次使用，不會上傳到任何伺服器。
+2.  將金鑰複製並貼到應用程式「AI 新聞分析」頁面上方的輸入框中。
+3.  點擊「儲存金鑰」。您的金鑰將會被安全地儲存在您的瀏覽器本地儲存空間 (Local Storage) 中，方便您下次使用，不會上傳到任何伺服器。
 
 **重要提示**: 請妥善保管您的 API 金鑰，不要與他人分享。

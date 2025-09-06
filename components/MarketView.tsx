@@ -23,10 +23,11 @@ const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 );
 
 interface MarketViewProps {
+    apiKey: string;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
 
-const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
+const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -168,7 +169,8 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
 
             {selectedStock && (
                 <StockModal 
-                  stock={selectedStock} 
+                  stock={selectedStock}
+                  apiKey={apiKey}
                   onClose={() => setSelectedStock(null)}
                   onStartAnalysis={onStartAnalysis}
                 />
