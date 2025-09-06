@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 
 interface SearchBarProps {
-    onSearch: (codes: string[]) => void;
+    onSearch: (term: string) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
@@ -10,8 +10,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        const codes = input.split(/[\s,]+/).filter(code => /^\d{4,6}$/.test(code.trim()));
-        onSearch(codes);
+        onSearch(input.trim());
     };
 
     return (
@@ -26,7 +25,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="輸入股票代號搜尋 (例如: 2330 2317)"
+                    placeholder="輸入股票代號或名稱搜尋 (例如: 2330 或 台積電)"
                     className="w-full pl-12 pr-24 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/80 focus:border-transparent transition-colors shadow-sm dark:text-text-dark-primary dark:placeholder-text-dark-secondary"
                 />
                  <button

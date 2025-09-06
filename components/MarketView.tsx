@@ -6,6 +6,7 @@ import { DEFAULT_STOCKS, REFRESH_INTERVAL } from '../constants';
 import StockCard from './StockCard';
 import StockModal from './StockModal';
 import SearchBar from './SearchBar';
+import { TW_STOCKS } from '../data/tw_stocks';
 
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center p-12 space-x-2">
@@ -34,6 +35,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [watchlist, setWatchlist] = useLocalStorage<string[]>('watchlist', []);
     const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
     const [searchCodes, setSearchCodes] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState<string>('');
 
     const codesToFetch = useMemo(() => {
         const combined = new Set([...DEFAULT_STOCKS, ...watchlist, ...searchCodes]);
@@ -106,13 +108,27 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         );
     };
 
-    const handleSearch = (codes: string[]) => {
-        setSearchCodes(codes);
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+        if (!term) {
+            setSearchCodes([]);
+            return;
+        }
+
+        const lowerCaseTerm = term.toLowerCase();
+        const foundCodes = TW_STOCKS
+            .filter(stock =>
+                stock.code.includes(lowerCaseTerm) ||
+                stock.name.toLowerCase().includes(lowerCaseTerm)
+            )
+            .map(stock => stock.code);
+        
+        setSearchCodes(foundCodes);
     };
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
     const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code));
-    const searchResultStocks = searchCodes.length > 0 ? stocks.filter(stock => searchCodes.includes(stock.code)) : [];
+    const searchResultStocks = searchTerm ? stocks.filter(stock => searchCodes.includes(stock.code)) : [];
 
     const renderStockGrid = (stockList: Stock[]) => (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
@@ -138,10 +154,14 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 <LoadingSpinner />
             ) : (
                 <>
-                    {searchCodes.length > 0 ? (
+                    {searchTerm ? (
                         <section>
                             <SectionHeader>搜尋結果</SectionHeader>
-                            {searchResultStocks.length > 0 ? renderStockGrid(searchResultStocks) : <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">找不到符合代號的股票。</p>}
+                            {searchResultStocks.length > 0 ? (
+                                renderStockGrid(searchResultStocks)
+                            ) : (
+                                <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">找不到符合「{searchTerm}」的股票。</p>
+                            )}
                         </section>
                     ) : (
                         <>
