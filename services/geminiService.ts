@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResult } from '../types';
+import { AnalysisResult, NewsArticle, NewsSource } from '../types';
 
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
@@ -72,19 +73,19 @@ ${newsText}
  * @param apiKey The user's Google Gemini API key.
  * @param stockName The name of the stock.
  * @param stockCode The code of the stock.
- * @returns A promise that resolves to the full text of the news article.
+ * @returns A promise that resolves to an object containing the news text and its sources.
  */
-export const fetchNewsWithGemini = async (apiKey: string, stockName: string, stockCode: string): Promise<string> => {
+export const fetchNewsWithGemini = async (apiKey: string, stockName: string, stockCode: string): Promise<NewsArticle> => {
     if (!apiKey) {
         throw new Error("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
     }
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `你是一位頂尖的財經新聞專家。請使用你的網路搜尋能力，找出關於台灣股票「${stockName} (${stockCode})」今天或近期最重要的一篇新聞。
+    const prompt = `你是一位頂尖的財經新聞專家，專精於台灣股市的即時動態。你的任務是使用網路搜尋能力，為台灣股票「${stockName} (${stockCode})」找出**今天（過去 24 小時內）最重要的一篇**財經新聞。
 
-找到後，請以客觀中立的語氣，「摘要」這篇新聞的「核心內容」。你的回覆應該只包含新聞摘要本身，不要有任何前言或評論。
+你的回覆必須**只包含該新聞報導的「完整內文」或「詳盡摘要」**，必須客觀、中立，並且不包含任何前言、標題或個人評論。
 
-如果找不到任何相關的即時新聞，請只回覆 '//NO_NEWS_FOUND//' 這段文字。`;
+**重要**: 一家活躍的上市公司必定會有近期的相關新聞。如果第一時間找不到，請擴大搜尋範圍至各大財經新聞網站（例如：鉅亨網、經濟日報、工商時報），務必回傳一篇最相關的新聞內容。絕不可回覆找不到新聞。`;
 
     try {
         const response = await ai.models.generateContent({
@@ -95,7 +96,21 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
                 temperature: 0.1, // Factual but allows for good summarization
             },
         });
-        return response.text.trim();
+        
+        const text = response.text.trim();
+        
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+        const sources: NewsSource[] = groundingChunks
+            .map((chunk: any) => ({
+                title: chunk.web?.title || '未知來源',
+                uri: chunk.web?.uri || '#',
+            }))
+            .filter((source: NewsSource) => source.uri !== '#');
+
+        const uniqueSources = Array.from(new Map(sources.map(s => [s.uri, s])).values());
+
+        return { text, sources: uniqueSources };
+
     } catch (error) {
          console.error("Error fetching news with Gemini API:", error);
         if (error instanceof Error && error.message.includes('API key not valid')) {

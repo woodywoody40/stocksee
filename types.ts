@@ -22,3 +22,13 @@ export enum Tab {
     Market = 'Market',
     AI_Analysis = 'AI_Analysis'
 }
+
+export interface NewsSource {
+  title: string;
+  uri: string;
+}
+
+export interface NewsArticle {
+  text: string;
+  sources: NewsSource[];
+}

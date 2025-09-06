@@ -3,7 +3,7 @@ import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
-import { Tab } from './types';
+import { Tab, NewsArticle } from './types';
 import { fetchNewsWithGemini } from './services/geminiService';
 import useLocalStorage from './hooks/useLocalStorage';
 
@@ -11,14 +11,14 @@ import useLocalStorage from './hooks/useLocalStorage';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Market);
   const [analysisTarget, setAnalysisTarget] = useState<string | null>(null);
-  const [analysisContent, setAnalysisContent] = useState<string | null>(null);
+  const [analysisArticle, setAnalysisArticle] = useState<NewsArticle | null>(null);
   const [isFetchingNews, setIsFetchingNews] = useState(false);
   const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
   
   const handleTabChange = useCallback((tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
       setAnalysisTarget(null);
-      setAnalysisContent(null);
+      setAnalysisArticle(null);
     }
     setActiveTab(tab);
   }, []);
@@ -33,18 +33,11 @@ const App: React.FC = () => {
     setAnalysisTarget(stockName);
     setActiveTab(Tab.AI_Analysis);
     setIsFetchingNews(true);
-    setAnalysisContent(null);
+    setAnalysisArticle(null);
 
     try {
-      const abortController = new AbortController();
-      // FIX: The `fetchNewsWithGemini` function does not accept an AbortSignal. The fourth argument has been removed to match the function's definition.
-      const articleText = await fetchNewsWithGemini(apiKey, stockName, stockCode);
-      
-      if (articleText.includes('//NO_NEWS_FOUND//')) {
-        setAnalysisContent(`//ERROR// AI 找不到關於「${stockName}」的即時新聞。`);
-      } else {
-        setAnalysisContent(articleText);
-      }
+      const article = await fetchNewsWithGemini(apiKey, stockName, stockCode);
+      setAnalysisArticle(article);
 
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -53,7 +46,7 @@ const App: React.FC = () => {
       }
       console.error("Failed to fetch news via Gemini:", error);
       const errorMessage = error instanceof Error ? error.message : '未知的錯誤';
-      setAnalysisContent(`//ERROR// ${errorMessage}`);
+      setAnalysisArticle({ text: `//ERROR// ${errorMessage}`, sources: [] });
     } finally {
       setIsFetchingNews(false);
     }
@@ -71,7 +64,7 @@ const App: React.FC = () => {
             setApiKey={setApiKey}
             analysisTarget={analysisTarget} 
             isFetchingNews={isFetchingNews}
-            initialContent={analysisContent}
+            initialArticle={analysisArticle}
           />
         )}
       </main>

@@ -1,8 +1,9 @@
 
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { analyzeNews } from '../services/geminiService';
-import { AnalysisResult } from '../types';
+import { AnalysisResult, NewsArticle, NewsSource } from '../types';
 
 const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({ className, ...props }) => (
     <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
@@ -30,7 +31,7 @@ const icons = {
 interface AiAnalysisViewProps {
     analysisTarget: string | null;
     isFetchingNews: boolean;
-    initialContent: string | null;
+    initialArticle: NewsArticle | null;
     apiKey: string;
     setApiKey: (key: string) => void;
 }
@@ -65,8 +66,9 @@ const AnalysisSkeleton: React.FC = () => (
 );
 
 
-const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent, apiKey, setApiKey }) => {
+const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialArticle, apiKey, setApiKey }) => {
     const [newsText, setNewsText] = useState('');
+    const [sources, setSources] = useState<NewsSource[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -103,7 +105,6 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
         setError(null);
         setResult(null);
         try {
-            // FIX: The `analyzeNews` function does not accept an AbortSignal. The third argument has been removed to match the function's definition.
             const analysisResult = await analyzeNews(apiKey, text);
             setResult(analysisResult);
         } catch (err) {
@@ -122,29 +123,32 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     useEffect(() => {
         setResult(null);
         setNewsText('');
+        setSources([]);
         setError(null);
         analysisTriggeredForContent.current = null;
     }, [analysisTarget]);
 
     useEffect(() => {
-        if (initialContent && initialContent !== analysisTriggeredForContent.current) {
-            analysisTriggeredForContent.current = initialContent;
+        if (initialArticle && initialArticle.text !== analysisTriggeredForContent.current) {
+            analysisTriggeredForContent.current = initialArticle.text;
             
-            if (initialContent.startsWith('//ERROR//')) {
-                setError(`自動獲取新聞失敗: ${initialContent.replace('//ERROR// ', '')}`);
+            if (initialArticle.text.startsWith('//ERROR//')) {
+                setError(`自動獲取新聞失敗: ${initialArticle.text.replace('//ERROR// ', '')}`);
                 setNewsText('');
+                setSources([]);
             } else {
-                setNewsText(initialContent);
-                handleAnalyze(initialContent);
+                setNewsText(initialArticle.text);
+                setSources(initialArticle.sources);
+                handleAnalyze(initialArticle.text);
             }
         }
-    }, [initialContent, handleAnalyze]);
+    }, [initialArticle, handleAnalyze]);
 
     if (isFetchingNews) {
         return (
             <div className="max-w-4xl mx-auto">
                 <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-light-border dark:border-dark-border shadow-2xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
-                     <LoadingIcon className="h-8 w-8 text-brand-gold"/>
+                     <LoadingIcon className="h-8 w-8 text-brand-gold animate-spin"/>
                      <h3 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">AI 正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
                      <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">請稍候，過程可能需要一點時間。</p>
                 </div>
@@ -264,6 +268,30 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                     </div>
                 </div>
             )}
+
+            {sources.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-xl font-bold mb-4 text-brand-gold pl-3 border-l-4 border-brand-gold">新聞來源</h3>
+                    <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '400ms'}}>
+                        <ul className="space-y-3 list-disc list-inside">
+                            {sources.map((source, index) => (
+                                <li key={index} className="text-sm text-text-light-secondary dark:text-text-dark-secondary truncate">
+                                    <a 
+                                        href={source.uri} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-brand-orange hover:underline"
+                                        title={source.title}
+                                    >
+                                        {source.title}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
