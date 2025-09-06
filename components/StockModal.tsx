@@ -36,15 +36,15 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
     <div className={`flex justify-center items-center space-x-2 ${small ? 'p-0' : 'p-4'}`}>
-        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
-        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
-        <div className={`bg-brand-gold rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
 
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border">
+    <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border">
         <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-1">{label}</p>
         <p className={`text-xl font-semibold text-text-light-primary dark:text-text-dark-primary ${className}`}>{value}</p>
     </div>
@@ -151,7 +151,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 </div>
 
                 <div className="max-h-[calc(90vh-320px)] overflow-y-auto px-6 pb-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
                         <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
                         <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
@@ -160,12 +160,12 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                     </div>
 
                     <div className="mt-6">
-                        <div className="relative p-4 rounded-lg border border-brand-gold/20 dark:border-brand-gold/30 bg-gradient-to-br from-brand-gold/5 to-transparent dark:from-brand-gold/10 dark:to-transparent overflow-hidden">
-                           <div className="absolute -top-10 -right-10 text-brand-gold/20 dark:text-brand-gold/20">
+                        <div className="relative p-4 rounded-lg border border-brand-orange/20 dark:border-brand-orange/30 bg-gradient-to-br from-brand-orange/10 to-transparent dark:from-brand-orange/10 dark:to-transparent overflow-hidden shadow-[0_0_25px_rgba(234,88,12,0.15)] dark:shadow-[0_0_40px_rgba(234,88,12,0.2)]">
+                           <div className="absolute -top-10 -right-10 text-brand-orange/10 dark:text-brand-orange/20">
                                 <SparklesIcon className="w-24 h-24 transform rotate-12" />
                            </div>
                            <div className="relative z-10">
-                                <div className="flex items-center gap-2 text-brand-gold font-semibold mb-3">
+                                <div className="flex items-center gap-2 text-brand-orange font-semibold mb-3">
                                    <SparklesIcon className="w-5 h-5"/>
                                    <h4>AI 即時洞察</h4>
                                 </div>

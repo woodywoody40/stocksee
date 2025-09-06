@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
@@ -14,15 +15,15 @@ const App: React.FC = () => {
   const [isFetchingNews, setIsFetchingNews] = useState(false);
   const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
   
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = useCallback((tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
       setAnalysisTarget(null);
       setAnalysisContent(null);
     }
     setActiveTab(tab);
-  }
+  }, []);
 
-  const handleStartAnalysis = async (stockName: string, stockCode: string) => {
+  const handleStartAnalysis = useCallback(async (stockName: string, stockCode: string) => {
     if (!apiKey) {
       alert("請先在「AI 新聞分析」頁面設定您的 Google Gemini API 金鑰。");
       setActiveTab(Tab.AI_Analysis); // Switch to AI tab to show settings
@@ -35,6 +36,8 @@ const App: React.FC = () => {
     setAnalysisContent(null);
 
     try {
+      const abortController = new AbortController();
+      // FIX: The `fetchNewsWithGemini` function does not accept an AbortSignal. The fourth argument has been removed to match the function's definition.
       const articleText = await fetchNewsWithGemini(apiKey, stockName, stockCode);
       
       if (articleText.includes('//NO_NEWS_FOUND//')) {
@@ -44,13 +47,17 @@ const App: React.FC = () => {
       }
 
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('News fetch aborted');
+        return;
+      }
       console.error("Failed to fetch news via Gemini:", error);
       const errorMessage = error instanceof Error ? error.message : '未知的錯誤';
       setAnalysisContent(`//ERROR// ${errorMessage}`);
     } finally {
       setIsFetchingNews(false);
     }
-  };
+  }, [apiKey]);
 
 
   return (
@@ -69,10 +76,10 @@ const App: React.FC = () => {
         )}
       </main>
        <footer className="text-center p-6 text-xs text-text-light-secondary dark:text-text-dark-secondary border-t border-light-border dark:border-dark-border mt-8">
-        股見 - 台灣股市洞察 © 2024. All data is for informational purposes only.
+        股見 - 台灣股市洞察 © 2025. All data is for informational purposes only.
       </footer>
     </div>
   );
 };
 
-export default App;
+export default React.memo(App);

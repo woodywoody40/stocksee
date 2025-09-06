@@ -25,8 +25,10 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
         return [];
     }
 
-    // Construct the query string required by the TWSE API, e.g., 'tse_2330.tw|tse_2317.tw'
-    const query = codes.map(code => `tse_${code}.tw`).join('|');
+    // For each code, generate queries for both TSE (上市) and OTC (上櫃) markets.
+    // The API will only return data for the valid market, effectively covering all stocks.
+    // e.g., ['2330', '6274'] becomes 'tse_2330.tw|otc_2330.tw|tse_6274.tw|otc_6274.tw'
+    const query = codes.flatMap(code => [`tse_${code}.tw`, `otc_${code}.tw`]).join('|');
     
     // The official TWSE API endpoint for real-time data
     const apiUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${query}&json=1&delay=0&_=${Date.now()}`;
@@ -68,7 +70,11 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
             };
         });
 
-        return stocks;
+        // Since we query both TSE and OTC for each code, we might get duplicates if the API
+        // responds for both markets for a single code. We ensure uniqueness.
+        const uniqueStocks = Array.from(new Map(stocks.map(stock => [stock.code, stock])).values());
+
+        return uniqueStocks;
     } catch (error) {
         console.error("Failed to fetch real stock data via CORS proxy:", error);
         throw new Error("無法從台灣證券交易所獲取即時資料。這可能是暫時性網路問題或 CORS Proxy 服務不穩定所致。");

@@ -109,21 +109,34 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     };
 
     const handleSearch = (term: string) => {
-        setSearchTerm(term);
-        if (!term) {
+        const trimmedTerm = term.trim();
+        setSearchTerm(trimmedTerm);
+    
+        if (!trimmedTerm) {
             setSearchCodes([]);
             return;
         }
-
-        const lowerCaseTerm = term.toLowerCase();
-        const foundCodes = TW_STOCKS
+    
+        const lowerCaseTerm = trimmedTerm.toLowerCase();
+    
+        // Find codes by matching name, code, or alias from our local list
+        const codesFromNameSearch = TW_STOCKS
             .filter(stock =>
                 stock.code.includes(lowerCaseTerm) ||
-                stock.name.toLowerCase().includes(lowerCaseTerm)
+                stock.name.toLowerCase().includes(lowerCaseTerm) ||
+                (stock.alias && stock.alias.some(a => a.toLowerCase().includes(lowerCaseTerm)))
             )
             .map(stock => stock.code);
+    
+        const potentialCodes = new Set<string>(codesFromNameSearch);
+    
+        // Also treat the input itself as a potential code to allow "searching via API"
+        // for any code, even those not in our local list.
+        if (/^\d{3,6}$/.test(trimmedTerm)) {
+            potentialCodes.add(trimmedTerm);
+        }
         
-        setSearchCodes(foundCodes);
+        setSearchCodes(Array.from(potentialCodes));
     };
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));

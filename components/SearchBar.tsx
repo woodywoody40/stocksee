@@ -25,7 +25,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="輸入股票代號或名稱搜尋 (例如: 2330 或 台積電)"
+                    placeholder="輸入代號、名稱或英文縮寫搜尋 (例: 2330, 台積電, tsmc)"
                     className="w-full pl-12 pr-24 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/80 focus:border-transparent transition-colors shadow-sm dark:text-text-dark-primary dark:placeholder-text-dark-secondary"
                 />
                  <button

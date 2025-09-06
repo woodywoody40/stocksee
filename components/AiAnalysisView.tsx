@@ -1,13 +1,22 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { analyzeNews } from '../services/geminiService';
 import { AnalysisResult } from '../types';
 
-const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
+const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({ className, ...props }) => (
+    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
 );
+
+const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+);
+
 
 const icons = {
   Positive: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -26,20 +35,59 @@ interface AiAnalysisViewProps {
     setApiKey: (key: string) => void;
 }
 
+const AnalysisSkeleton: React.FC = () => (
+    <div className="mt-8">
+        <h3 className="text-xl font-bold mb-4 text-brand-gold pl-3 border-l-4 border-brand-gold">AI 分析中...</h3>
+        <div className="space-y-6">
+            <div className="bg-light-card dark:bg-dark-card p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-3 animate-pulse"></div>
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mt-2 animate-pulse"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-light-card dark:bg-dark-card p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4 animate-pulse"></div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse"></div>
+                        <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/2 animate-pulse"></div>
+                    </div>
+                </div>
+                <div className="bg-light-card dark:bg-dark-card p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg">
+                     <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4 animate-pulse"></div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse"></div>
+                        <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/2 animate-pulse"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+
 const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent, apiKey, setApiKey }) => {
     const [newsText, setNewsText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [inputApiKey, setInputApiKey] = useState(apiKey);
+    const [isKeySaved, setIsKeySaved] = useState(false);
     
     const analysisTriggeredForContent = useRef<string | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    const handleSaveKey = () => {
+    const handleSaveKey = useCallback(() => {
         setApiKey(inputApiKey);
-    };
+        setIsKeySaved(true);
+        setTimeout(() => setIsKeySaved(false), 2000);
+    }, [inputApiKey, setApiKey]);
 
     const handleAnalyze = useCallback(async (contentToAnalyze?: string) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         if (!apiKey) {
             setError('請先設定您的 Google Gemini API 金鑰。');
             return;
@@ -55,11 +103,14 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
         setError(null);
         setResult(null);
         try {
+            // FIX: The `analyzeNews` function does not accept an AbortSignal. The third argument has been removed to match the function's definition.
             const analysisResult = await analyzeNews(apiKey, text);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
-                setError(err.message);
+                if (err.name !== 'AbortError') {
+                    setError(err.message);
+                }
             } else {
                 setError('發生未知錯誤。');
             }
@@ -77,11 +128,11 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
 
     useEffect(() => {
         if (initialContent && initialContent !== analysisTriggeredForContent.current) {
-            analysisTriggeredForContent.current = initialContent; // Mark as processed
+            analysisTriggeredForContent.current = initialContent;
             
             if (initialContent.startsWith('//ERROR//')) {
                 setError(`自動獲取新聞失敗: ${initialContent.replace('//ERROR// ', '')}`);
-                setNewsText(''); // Clear text area on error
+                setNewsText('');
             } else {
                 setNewsText(initialContent);
                 handleAnalyze(initialContent);
@@ -122,9 +173,21 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                     />
                     <button
                         onClick={handleSaveKey}
-                        className="absolute inset-y-1.5 right-1.5 flex justify-center items-center w-24 rounded-md text-sm font-semibold bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 transition-colors"
+                        disabled={isKeySaved}
+                        className={`absolute inset-y-1.5 right-1.5 flex justify-center items-center w-24 rounded-md text-sm font-semibold transition-all duration-300 ${
+                            isKeySaved 
+                                ? 'bg-negative text-white' 
+                                : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200'
+                        }`}
                     >
-                       儲存金鑰
+                        {isKeySaved ? (
+                            <div className="flex items-center gap-1.5">
+                                <CheckIcon className="w-5 h-5" />
+                                <span>已儲存</span>
+                            </div>
+                        ) : (
+                           '儲存金鑰'
+                        )}
                     </button>
                 </div>
             </div>
@@ -159,11 +222,13 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                         disabled={isLoading || !newsText.trim() || !apiKey}
                         className="w-full flex justify-center items-center gap-2 bg-brand-orange hover:bg-brand-orange/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
                     >
-                        {isLoading ? <><LoadingIcon /> 分析中...</> : '開始分析'}
+                        {isLoading ? <><LoadingIcon className="h-5 w-5 text-white" /> 分析中...</> : '開始分析'}
                     </button>
                     {!apiKey && <p className="text-center text-sm text-positive/90">請先設定 API 金鑰以啟用分析功能。</p>}
                 </div>
             </div>
+            
+            {isLoading && <AnalysisSkeleton />}
 
             {error && (
                 <div className="mt-6 bg-positive/20 border border-positive/50 text-positive p-4 rounded-lg animate-fade-in">
@@ -203,4 +268,4 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     );
 };
 
-export default AiAnalysisView;
+export default React.memo(AiAnalysisView);
