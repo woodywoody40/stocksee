@@ -29,19 +29,19 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
 
     return (
         <div 
-            className={`relative bg-dark-card backdrop-blur-md border border-dark-border rounded-xl p-4 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden group hover:-translate-y-1.5 ${glowStyle}`}
+            className={`relative bg-light-card dark:bg-dark-card backdrop-blur-md border border-light-border dark:border-dark-border rounded-xl p-4 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden group hover:-translate-y-1.5 dark:${glowStyle} shadow-md dark:shadow-none shadow-slate-200`}
             onClick={() => onCardClick(stock)}
         >
-             <div className={`absolute top-0 right-0 h-full w-2/3 bg-gradient-to-l ${isPositive ? 'from-positive/15' : 'from-negative/15'} to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-300`}></div>
+             <div className={`absolute top-0 right-0 h-full w-2/3 bg-gradient-to-l ${isPositive ? 'from-positive/10 dark:from-positive/15' : 'from-negative/10 dark:from-negative/15'} to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-300`}></div>
             <div className="relative z-10">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="font-bold text-lg text-text-primary">{stock.name}</h3>
-                        <p className="text-sm text-text-secondary">{stock.code}</p>
+                        <h3 className="font-bold text-lg text-text-light-primary dark:text-text-dark-primary">{stock.name}</h3>
+                        <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary">{stock.code}</p>
                     </div>
                     <button 
                         onClick={handleStarClick}
-                        className="text-text-secondary hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
+                        className="text-text-light-secondary dark:text-text-dark-secondary hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
                         aria-label={isWatched ? '從關注列表移除' : '加入關注列表'}
                     >
                         <StarIcon isFilled={isWatched} className={`w-6 h-6 ${isWatched ? 'text-brand-gold' : ''}`} />

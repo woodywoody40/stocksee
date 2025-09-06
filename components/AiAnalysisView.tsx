@@ -103,10 +103,10 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     if (isFetchingNews) {
         return (
             <div className="max-w-4xl mx-auto">
-                <div className="bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-dark-border shadow-2xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
+                <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-light-border dark:border-dark-border shadow-2xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
                      <LoadingIcon className="h-8 w-8 text-brand-gold"/>
-                     <h3 className="text-lg font-semibold text-text-primary">AI 正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
-                     <p className="text-text-secondary text-sm">請稍候，過程可能需要一點時間。</p>
+                     <h3 className="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">AI 正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
+                     <p className="text-text-light-secondary dark:text-text-dark-secondary text-sm">請稍候，過程可能需要一點時間。</p>
                 </div>
             </div>
         );
@@ -114,11 +114,11 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-dark-border shadow-2xl">
+            <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-light-border dark:border-dark-border shadow-lg dark:shadow-2xl">
                  <div className="flex justify-between items-start mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-brand-gold">AI 新聞分析</h2>
-                        <p className="text-text-secondary mt-1">
+                        <p className="text-text-light-secondary dark:text-text-dark-secondary mt-1">
                           {analysisTarget 
                             ? `已自動帶入關於「${analysisTarget}」的最新聞，您也可手動修改內容。`
                             : "貼上股票相關新聞，讓 AI 為您提煉重點、分析情緒與預測潛在走勢。"
@@ -130,19 +130,19 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                 <div className="space-y-6">
                     <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
-                            <label htmlFor="api-key-input" className="block text-sm font-medium text-text-secondary">
+                            <label htmlFor="api-key-input" className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">
                                 Google Gemini API 金鑰
                             </label>
                             <div className="relative group flex items-center">
-                                <InformationCircleIcon className="w-4 h-4 text-text-tertiary cursor-help" />
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-dark-card/95 backdrop-blur-xl border border-dark-border rounded-lg text-xs text-text-secondary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 transform">
-                                    <p className="font-semibold text-text-primary mb-1">什麼是 API 金鑰？</p>
+                                <InformationCircleIcon className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary cursor-help" />
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-light-card/95 dark:bg-dark-card/95 backdrop-blur-xl border border-light-border dark:border-dark-border rounded-lg text-xs text-text-light-secondary dark:text-text-dark-secondary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 transform">
+                                    <p className="font-semibold text-text-light-primary dark:text-text-dark-primary mb-1">什麼是 API 金鑰？</p>
                                     <p>API 金鑰是您用來存取 Google AI 服務的專屬密碼。本應用需要它來驅動 AI 分析功能。</p>
                                     <p className="mt-2">您的金鑰將安全地儲存在瀏覽器中，不會上傳至任何伺-服器。</p>
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-blue/90 hover:underline mt-2 block font-semibold">
                                         點此免費取得金鑰 &rarr;
                                     </a>
-                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-[-4px] w-2 h-2 bg-dark-card border-r border-b border-dark-border transform rotate-45"></div>
+                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-[-4px] w-2 h-2 bg-light-card dark:bg-dark-card border-r border-b border-light-border dark:border-dark-border transform rotate-45"></div>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +156,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                                     setSaveStatus('idle'); // Reset save status on change
                                 }}
                                 placeholder="在此輸入您的 API 金鑰"
-                                className="flex-grow p-3 bg-black/30 border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition"
+                                className="flex-grow p-3 bg-slate-100 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition"
                                 disabled={isLoading}
                             />
                             <button
@@ -165,7 +165,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                                 className={`px-5 py-3 font-semibold rounded-lg transition-all duration-300 text-sm ${
                                     saveStatus === 'saved'
                                         ? 'bg-green-600/80 text-white cursor-default'
-                                        : 'bg-brand-blue hover:bg-brand-blue/80 text-white disabled:bg-text-tertiary disabled:cursor-not-allowed'
+                                        : 'bg-brand-blue hover:bg-brand-blue/80 text-white disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed'
                                 }`}
                             >
                                 {saveStatus === 'saved' ? '已儲存 ✓' : '儲存'}
@@ -180,13 +180,13 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                             ? `在此貼上或編輯關於「${analysisTarget}」的新聞文章全文...`
                             : "在此貼上新聞文章全文..."
                         }
-                        className="w-full h-48 p-4 bg-black/30 border border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition resize-y"
+                        className="w-full h-48 p-4 bg-slate-100 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition resize-y"
                         disabled={isLoading}
                     />
                     <button
                         onClick={() => handleAnalyze()}
                         disabled={isLoading || !newsText.trim() || !apiKey.trim()}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
                     >
                         {isLoading ? <><LoadingIcon /> 分析中...</> : '開始分析'}
                     </button>
@@ -204,23 +204,23 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                 <div className="mt-8">
                      <h3 className="text-xl font-bold mb-4 text-brand-gold pl-3 border-l-4 border-brand-gold">分析結果</h3>
                     <div className="space-y-6">
-                        <div className="bg-dark-card backdrop-blur-md p-5 rounded-xl border border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '100ms'}}>
-                            <h4 className="font-semibold text-text-secondary mb-2">重點摘要</h4>
-                            <p className="text-text-primary leading-relaxed">{result.summary}</p>
+                        <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '100ms'}}>
+                            <h4 className="font-semibold text-text-light-secondary dark:text-text-dark-secondary mb-2">重點摘要</h4>
+                            <p className="text-text-light-primary dark:text-text-dark-primary leading-relaxed">{result.summary}</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-dark-card backdrop-blur-md p-5 rounded-xl border border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '200ms'}}>
-                                <h4 className="font-semibold text-text-secondary mb-4">情緒分析</h4>
+                            <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '200ms'}}>
+                                <h4 className="font-semibold text-text-light-secondary dark:text-text-dark-secondary mb-4">情緒分析</h4>
                                 <div className="flex items-center gap-4">
                                     {icons[result.sentiment]()}
-                                    <span className="text-2xl font-bold text-text-primary">{ {Positive: '正面', Negative: '負面', Neutral: '中性'}[result.sentiment]}</span>
+                                    <span className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary">{ {Positive: '正面', Negative: '負面', Neutral: '中性'}[result.sentiment]}</span>
                                 </div>
                             </div>
-                            <div className="bg-dark-card backdrop-blur-md p-5 rounded-xl border border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '300ms'}}>
-                                <h4 className="font-semibold text-text-secondary mb-4">潛在波動預測</h4>
+                            <div className="bg-light-card dark:bg-dark-card backdrop-blur-md p-5 rounded-xl border border-light-border dark:border-dark-border shadow-lg animate-staggered-fade-in" style={{animationDelay: '300ms'}}>
+                                <h4 className="font-semibold text-text-light-secondary dark:text-text-dark-secondary mb-4">潛在波動預測</h4>
                                 <div className="flex items-center gap-4">
                                     {icons[result.prediction]()}
-                                    <span className="text-2xl font-bold text-text-primary">{ {Up: '上漲', Down: '下跌', Unchanged: '不變'}[result.prediction]}</span>
+                                    <span className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary">{ {Up: '上漲', Down: '下跌', Unchanged: '不變'}[result.prediction]}</span>
                                 </div>
                             </div>
                         </div>

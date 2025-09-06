@@ -16,7 +16,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h2 className="text-2xl font-bold mb-6 text-text-primary tracking-wide flex items-center gap-3">
+    <h2 className="text-2xl font-bold mb-6 text-text-light-primary dark:text-text-dark-primary tracking-wide flex items-center gap-3">
         <span className="w-1.5 h-6 bg-brand-gold rounded-full"></span>
         {children}
     </h2>
@@ -141,7 +141,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
                     {searchCodes.length > 0 ? (
                         <section>
                             <SectionHeader>搜尋結果</SectionHeader>
-                            {searchResultStocks.length > 0 ? renderStockGrid(searchResultStocks) : <p className="text-text-secondary text-center py-8">找不到符合代號的股票。</p>}
+                            {searchResultStocks.length > 0 ? renderStockGrid(searchResultStocks) : <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">找不到符合代號的股票。</p>}
                         </section>
                     ) : (
                         <>
@@ -157,7 +157,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
                                 {marketStocks.length > 0 ? (
                                    renderStockGrid(marketStocks)
                                 ) : (
-                                   <p className="text-text-secondary text-center py-8">
+                                   <p className="text-text-light-secondary dark:text-text-dark-secondary text-center py-8">
                                        無法載入市場焦點。
                                    </p>
                                 )}

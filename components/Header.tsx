@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tab } from '../types';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
   activeTab: Tab;
@@ -23,35 +24,38 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const getTabClass = (tab: Tab) =>
     `relative z-10 flex flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold outline-none transition-colors duration-300 ${
       activeTab === tab
-        ? 'text-text-primary'
-        : 'text-text-secondary hover:text-text-primary'
+        ? 'text-white'
+        : 'text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary'
     }`;
 
   return (
-    <header className="sticky top-0 z-40 bg-dark-bg/70 backdrop-blur-lg border-b border-dark-border">
+    <header className="sticky top-0 z-40 bg-light-card/80 dark:bg-dark-bg/70 backdrop-blur-lg border-b border-light-border dark:border-dark-border">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-3">
             <ChartBarIcon className="w-7 h-7 text-brand-gold" />
-            <h1 className="text-2xl font-bold text-text-primary tracking-wider">股見</h1>
-            <span className="text-xs text-text-secondary mt-1.5 hidden sm:inline-block">台灣股市洞察</span>
+            <h1 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary tracking-wider">股見</h1>
+            <span className="text-xs text-text-light-secondary dark:text-text-dark-secondary mt-1.5 hidden sm:inline-block">台灣股市洞察</span>
           </div>
-          <nav className="relative flex items-center p-1 bg-black/20 rounded-xl w-full sm:w-auto">
-             <div
-              className="absolute top-1 bottom-1 w-1/2 rounded-lg bg-brand-blue/60 transition-transform duration-300 ease-in-out"
-              style={{
-                transform: activeTab === Tab.Market ? 'translateX(0%)' : 'translateX(100%)',
-              }}
-             />
-            <button onClick={() => setActiveTab(Tab.Market)} className={getTabClass(Tab.Market)}>
-                <ChartBarIcon className="w-5 h-5" />
-                市場動態
-            </button>
-            <button onClick={() => setActiveTab(Tab.AI_Analysis)} className={getTabClass(Tab.AI_Analysis)}>
-                <SparklesIcon className="w-5 h-5" />
-                AI 新聞分析
-            </button>
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav className="relative flex items-center p-1 bg-slate-200/60 dark:bg-black/20 rounded-xl w-full sm:w-auto">
+               <div
+                className="absolute top-1 bottom-1 w-1/2 rounded-lg bg-brand-blue/80 dark:bg-brand-blue/60 transition-transform duration-300 ease-in-out"
+                style={{
+                  transform: activeTab === Tab.Market ? 'translateX(0%)' : 'translateX(100%)',
+                }}
+               />
+              <button onClick={() => setActiveTab(Tab.Market)} className={getTabClass(Tab.Market)}>
+                  <ChartBarIcon className="w-5 h-5" />
+                  市場動態
+              </button>
+              <button onClick={() => setActiveTab(Tab.AI_Analysis)} className={getTabClass(Tab.AI_Analysis)}>
+                  <SparklesIcon className="w-5 h-5" />
+                  AI 新聞分析
+              </button>
+            </nav>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>

@@ -5,9 +5,11 @@ import AiAnalysisView from './components/AiAnalysisView';
 import { Tab } from './types';
 import { fetchNewsWithGemini } from './services/geminiService';
 import useLocalStorage from './hooks/useLocalStorage';
+import { useTheme } from './hooks/useTheme';
 
 
 const App: React.FC = () => {
+  const [theme] = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Market);
   const [analysisTarget, setAnalysisTarget] = useState<string | null>(null);
   const [analysisContent, setAnalysisContent] = useState<string | null>(null);
@@ -55,10 +57,10 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen bg-dark-bg font-sans bg-[length:200%_200%] animate-aurora"
-      style={{
+      className={`min-h-screen font-sans bg-light-bg dark:bg-dark-bg bg-[length:200%_200%] ${theme === 'dark' ? 'animate-aurora' : ''}`}
+      style={theme === 'dark' ? {
         backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 35%), radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 35%), radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 35%)'
-      }}
+      } : {}}
     >
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
@@ -73,7 +75,7 @@ const App: React.FC = () => {
           />
         )}
       </main>
-       <footer className="text-center p-6 text-xs text-text-secondary border-t border-dark-border mt-8">
+       <footer className="text-center p-6 text-xs text-text-light-secondary dark:text-text-dark-secondary border-t border-light-border dark:border-dark-border mt-8">
         股見 - 台灣股市洞察 © 2024. All data is for informational purposes only.
       </footer>
     </div>

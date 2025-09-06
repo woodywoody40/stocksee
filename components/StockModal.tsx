@@ -44,9 +44,9 @@ const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
 
 
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div className="bg-black/20 p-4 rounded-lg border border-dark-border">
-        <p className="text-sm text-text-secondary mb-1">{label}</p>
-        <p className={`text-xl font-semibold text-text-primary ${className}`}>{value}</p>
+    <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border">
+        <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary mb-1">{label}</p>
+        <p className={`text-xl font-semibold text-text-light-primary dark:text-text-dark-primary ${className}`}>{value}</p>
     </div>
 );
 
@@ -116,13 +116,13 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className="bg-dark-card/80 backdrop-blur-xl rounded-2xl border border-dark-border shadow-2xl w-full max-w-md transform animate-pop-in overflow-hidden"
+                className="bg-light-card/90 dark:bg-dark-card/80 backdrop-blur-xl rounded-2xl border border-light-border dark:border-dark-border shadow-2xl w-full max-w-md transform animate-pop-in overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                  <div className="p-6 pb-0">
                     <button 
                         onClick={onClose} 
-                        className="absolute top-4 right-4 text-text-secondary hover:text-text-primary bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue z-20"
+                        className="absolute top-4 right-4 text-text-light-secondary dark:text-text-dark-secondary hover:text-text-light-primary dark:hover:text-text-dark-primary bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue z-20"
                         aria-label="關閉視窗"
                     >
                         <CloseIcon className="w-5 h-5" />
@@ -133,8 +133,8 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                            {isPositive ? <TrendUpIcon className="w-6 h-6 text-positive" /> : <TrendDownIcon className="w-6 h-6 text-negative" /> }
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-text-primary">{stock.name}</h2>
-                            <p className="text-text-secondary">{stock.code}</p>
+                            <h2 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary">{stock.name}</h2>
+                            <p className="text-text-light-secondary dark:text-text-dark-secondary">{stock.code}</p>
                         </div>
                     </div>
                     
@@ -166,19 +166,19 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                            <SparklesIcon className="w-5 h-5"/>
                            <h4>AI 即時洞察</h4>
                         </div>
-                         <div className="bg-black/20 p-4 rounded-lg border border-dark-border text-sm min-h-[80px]">
+                         <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border text-sm min-h-[80px]">
                            {isInsightLoading && <LoadingSpinner />}
                            {insightError && <p className="text-positive/90">{insightError}</p>}
-                           {aiInsight && <p className="text-text-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                           {aiInsight && <p className="text-text-light-secondary dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 pt-4 bg-black/20 border-t border-dark-border">
+                <div className="p-6 pt-4 bg-slate-100/70 dark:bg-black/20 border-t border-light-border dark:border-dark-border">
                      <button
                         onClick={handleDeepAnalysisClick}
                         disabled={isButtonLoading}
-                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-tertiary disabled:cursor-wait transform hover:scale-105"
+                        className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-wait transform hover:scale-105"
                     >
                         {isButtonLoading ? (
                            <LoadingSpinner small={true} />

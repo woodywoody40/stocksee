@@ -46,13 +46,13 @@ const StatCard: React.FC<{
             );
         }
         if (metric === 'volume') {
-            return <span>{stock.volume.toLocaleString()} 張</span>;
+            return <span>{Math.floor(stock.volume / 1000).toLocaleString()} 張</span>;
         }
         return null;
     };
 
     return (
-        <div className="bg-dark-card backdrop-blur-md border border-dark-border rounded-xl p-4 flex-1 min-w-[280px] animate-staggered-fade-in">
+        <div className="bg-light-card dark:bg-dark-card backdrop-blur-md border border-light-border dark:border-dark-border rounded-xl p-4 flex-1 min-w-[280px] animate-staggered-fade-in shadow-md dark:shadow-none shadow-slate-200">
             <div className={`flex items-center gap-3 mb-4 text-lg font-bold ${colorClass}`}>
                 {icon}
                 <h3>{title}</h3>
@@ -62,16 +62,16 @@ const StatCard: React.FC<{
                     <li 
                         key={stock.code} 
                         onClick={() => onStockClick(stock)}
-                        className="flex justify-between items-center text-sm cursor-pointer group rounded-md p-1 -m-1 hover:bg-white/5 transition-colors"
+                        className="flex justify-between items-center text-sm cursor-pointer group rounded-md p-1 -m-1 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                     >
                         <div className="transition-colors group-hover:text-brand-gold">
-                            <p className="font-semibold text-text-primary">{stock.name}</p>
-                            <p className="text-xs text-text-secondary">{stock.code}</p>
+                            <p className="font-semibold text-text-light-primary dark:text-text-dark-primary">{stock.name}</p>
+                            <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">{stock.code}</p>
                         </div>
-                        <p className="font-semibold">{renderMetric(stock)}</p>
+                        <p className="font-semibold text-text-light-primary dark:text-text-dark-primary">{renderMetric(stock)}</p>
                     </li>
                 )) : (
-                    <p className="text-text-tertiary text-sm text-center py-4">暫無資料</p>
+                    <p className="text-text-light-tertiary dark:text-text-dark-tertiary text-sm text-center py-4">暫無資料</p>
                 )}
             </ul>
         </div>
