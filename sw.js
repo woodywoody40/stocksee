@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stocksee-cache-v1';
+const CACHE_NAME = 'stocksee-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,6 +16,22 @@ self.addEventListener('install', event => {
         // Add all the assets to the cache
         return cache.addAll(urlsToCache);
       })
+  );
+});
+
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            // Delete old caches
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
 });
 
