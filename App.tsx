@@ -4,7 +4,6 @@ import MarketView from './components/MarketView';
 import AiAnalysisView from './components/AiAnalysisView';
 import { Tab } from './types';
 import { fetchNewsWithGemini } from './services/geminiService';
-import useLocalStorage from './hooks/useLocalStorage';
 import { useTheme } from './hooks/useTheme';
 
 
@@ -14,8 +13,7 @@ const App: React.FC = () => {
   const [analysisTarget, setAnalysisTarget] = useState<string | null>(null);
   const [analysisContent, setAnalysisContent] = useState<string | null>(null);
   const [isFetchingNews, setIsFetchingNews] = useState(false);
-  const [apiKey, setApiKey] = useLocalStorage<string>('gemini-api-key', '');
-
+  
   const handleTabChange = (tab: Tab) => {
     if (tab !== Tab.AI_Analysis) {
       setAnalysisTarget(null);
@@ -30,14 +28,8 @@ const App: React.FC = () => {
     setIsFetchingNews(true);
     setAnalysisContent(null);
 
-    if (!apiKey) {
-      setAnalysisContent(`//ERROR// 請先在此頁面設定您的 Google Gemini API 金鑰。`);
-      setIsFetchingNews(false);
-      return;
-    }
-
     try {
-      const articleText = await fetchNewsWithGemini(stockName, stockCode, apiKey);
+      const articleText = await fetchNewsWithGemini(stockName, stockCode);
       
       if (articleText.includes('//NO_NEWS_FOUND//')) {
         setAnalysisContent(`//ERROR// AI 找不到關於「${stockName}」的即時新聞。`);
@@ -64,14 +56,12 @@ const App: React.FC = () => {
     >
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <main className="p-4 sm:p-6 lg:p-8">
-        {activeTab === Tab.Market && <MarketView onStartAnalysis={handleStartAnalysis} apiKey={apiKey} />}
+        {activeTab === Tab.Market && <MarketView onStartAnalysis={handleStartAnalysis} />}
         {activeTab === Tab.AI_Analysis && (
           <AiAnalysisView 
             analysisTarget={analysisTarget} 
             isFetchingNews={isFetchingNews}
             initialContent={analysisContent}
-            apiKey={apiKey}
-            setApiKey={setApiKey}
           />
         )}
       </main>

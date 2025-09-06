@@ -24,10 +24,9 @@ const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
 interface MarketViewProps {
     onStartAnalysis: (stockName: string, stockCode: string) => void;
-    apiKey: string;
 }
 
-const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
+const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -86,10 +85,10 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
                 const data = await fetchStockData(codesToFetch);
                 const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
                 setStocks(currentStocks => {
-                    // Create a map of new stocks for efficient lookup
                     const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-                    // Update existing stocks or keep them if they weren't in the new fetch
-                    return currentStocks.map(oldStock => newStocksMap.get(oldStock.code) || oldStock);
+                    // Create a combined list of codes to maintain order and include new stocks
+                    const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
+                    return allCodes.map(code => newStocksMap.get(code) || currentStocks.find(s => s.code === code)).filter(Boolean) as Stock[];
                 });
             } catch (err) {
                 console.error("Background refresh failed:", err);
@@ -111,7 +110,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
     };
 
     const watchlistStocks = stocks.filter(stock => watchlist.includes(stock.code));
-    const marketStocks = stocks.filter(stock => !watchlist.includes(stock.code) && DEFAULT_STOCKS.includes(stock.code));
+    const marketStocks = stocks.filter(stock => DEFAULT_STOCKS.includes(stock.code));
     const searchResultStocks = searchCodes.length > 0 ? stocks.filter(stock => searchCodes.includes(stock.code)) : [];
 
     const renderStockGrid = (stockList: Stock[]) => (
@@ -172,7 +171,6 @@ const MarketView: React.FC<MarketViewProps> = ({ onStartAnalysis, apiKey }) => {
                   stock={selectedStock} 
                   onClose={() => setSelectedStock(null)}
                   onStartAnalysis={onStartAnalysis}
-                  apiKey={apiKey}
                 />
             )}
         </div>

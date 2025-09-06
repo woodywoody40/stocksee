@@ -9,12 +9,6 @@ const LoadingIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const InformationCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-  </svg>
-);
-
 const icons = {
   Positive: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Negative: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-negative" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -28,26 +22,15 @@ interface AiAnalysisViewProps {
     analysisTarget: string | null;
     isFetchingNews: boolean;
     initialContent: string | null;
-    apiKey: string;
-    setApiKey: (key: string) => void;
 }
 
-const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent, apiKey, setApiKey }) => {
+const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetchingNews, initialContent }) => {
     const [newsText, setNewsText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const [localApiKey, setLocalApiKey] = useState(apiKey);
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
-
     const analysisTriggeredForContent = useRef<string | null>(null);
-
-    const handleSaveApiKey = () => {
-        setApiKey(localApiKey);
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
-    };
 
     const handleAnalyze = useCallback(async (contentToAnalyze?: string) => {
         const text = contentToAnalyze || newsText;
@@ -55,16 +38,12 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
             setError('請先貼上或等待新聞內容載入。');
             return;
         }
-        if (!apiKey.trim()) {
-            setError('請儲存您的 API 金鑰以進行分析。');
-            return;
-        }
         
         setIsLoading(true);
         setError(null);
         setResult(null);
         try {
-            const analysisResult = await analyzeNews(text, apiKey);
+            const analysisResult = await analyzeNews(text);
             setResult(analysisResult);
         } catch (err) {
             if (err instanceof Error) {
@@ -75,7 +54,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
         } finally {
             setIsLoading(false);
         }
-    }, [apiKey, newsText]);
+    }, [newsText]);
 
     useEffect(() => {
         setResult(null);
@@ -93,12 +72,10 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                 setNewsText(''); // Clear text area on error
             } else {
                 setNewsText(initialContent);
-                if (apiKey) {
-                    handleAnalyze(initialContent);
-                }
+                handleAnalyze(initialContent);
             }
         }
-    }, [initialContent, apiKey, handleAnalyze]);
+    }, [initialContent, handleAnalyze]);
 
     if (isFetchingNews) {
         return (
@@ -121,57 +98,13 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                         <p className="text-text-light-secondary dark:text-text-dark-secondary mt-1">
                           {analysisTarget 
                             ? `已自動帶入關於「${analysisTarget}」的最新聞，您也可手動修改內容。`
-                            : "貼上股票相關新聞，讓 AI 為您提煉重點、分析情緒與預測潛在走勢。"
+                            : "從「市場動態」選擇股票，或在此貼上新聞，讓 AI 為您提煉重點。"
                           }
                         </p>
                     </div>
                 </div>
                 
                 <div className="space-y-6">
-                    <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                            <label htmlFor="api-key-input" className="block text-sm font-medium text-text-light-secondary dark:text-text-dark-secondary">
-                                Google Gemini API 金鑰
-                            </label>
-                            <div className="relative group flex items-center">
-                                <InformationCircleIcon className="w-4 h-4 text-text-light-tertiary dark:text-text-dark-tertiary cursor-help" />
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-light-card/95 dark:bg-dark-card/95 backdrop-blur-xl border border-light-border dark:border-dark-border rounded-lg text-xs text-text-light-secondary dark:text-text-dark-secondary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 transform">
-                                    <p className="font-semibold text-text-light-primary dark:text-text-dark-primary mb-1">什麼是 API 金鑰？</p>
-                                    <p>API 金鑰是您用來存取 Google AI 服務的專屬密碼。本應用需要它來驅動 AI 分析功能。</p>
-                                    <p className="mt-2">您的金鑰將安全地儲存在瀏覽器中，不會上傳至任何伺-服器。</p>
-                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-blue/90 hover:underline mt-2 block font-semibold">
-                                        點此免費取得金鑰 &rarr;
-                                    </a>
-                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-[-4px] w-2 h-2 bg-light-card dark:bg-dark-card border-r border-b border-light-border dark:border-dark-border transform rotate-45"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                id="api-key-input"
-                                type="password"
-                                value={localApiKey}
-                                onChange={(e) => {
-                                    setLocalApiKey(e.target.value);
-                                    setSaveStatus('idle'); // Reset save status on change
-                                }}
-                                placeholder="在此輸入您的 API 金鑰"
-                                className="flex-grow p-3 bg-slate-100 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-brand-blue/80 focus:outline-none transition"
-                                disabled={isLoading}
-                            />
-                            <button
-                                onClick={handleSaveApiKey}
-                                disabled={localApiKey === apiKey || isLoading}
-                                className={`px-5 py-3 font-semibold rounded-lg transition-all duration-300 text-sm ${
-                                    saveStatus === 'saved'
-                                        ? 'bg-green-600/80 text-white cursor-default'
-                                        : 'bg-brand-blue hover:bg-brand-blue/80 text-white disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed'
-                                }`}
-                            >
-                                {saveStatus === 'saved' ? '已儲存 ✓' : '儲存'}
-                            </button>
-                        </div>
-                    </div>
                     <textarea
                         value={newsText}
                         onChange={(e) => setNewsText(e.target.value)}
@@ -185,7 +118,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                     />
                     <button
                         onClick={() => handleAnalyze()}
-                        disabled={isLoading || !newsText.trim() || !apiKey.trim()}
+                        disabled={isLoading || !newsText.trim()}
                         className="w-full flex justify-center items-center gap-2 bg-brand-blue hover:bg-brand-blue/80 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-text-light-tertiary dark:disabled:bg-text-dark-tertiary disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
                     >
                         {isLoading ? <><LoadingIcon /> 分析中...</> : '開始分析'}

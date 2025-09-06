@@ -7,7 +7,6 @@ interface StockModalProps {
     stock: Stock;
     onClose: () => void;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
-    apiKey: string;
 }
 
 const TrendUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -50,7 +49,7 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
     </div>
 );
 
-const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis, apiKey }) => {
+const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
@@ -58,30 +57,27 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
     const [aiInsight, setAiInsight] = useState<string | null>(null);
     const [isInsightLoading, setIsInsightLoading] = useState(false);
     const [insightError, setInsightError] = useState<string | null>(null);
-    const [showApiError, setShowApiError] = useState(false);
     const [isButtonLoading, setIsButtonLoading] = useState(false);
 
     useEffect(() => {
         const fetchInsight = async () => {
-            if (!apiKey) {
-                setInsightError("請至「AI 新聞分析」頁面設定您的 API 金鑰以啟用此功能。");
-                return;
-            }
-            
             const cacheKey = `stock-insight-${stock.code}`;
-            const cachedInsight = sessionStorage.getItem(cacheKey);
-
-            if (cachedInsight) {
-                setAiInsight(cachedInsight);
-                return;
+            const cachedItem = sessionStorage.getItem(cacheKey);
+            if (cachedItem) {
+                 const { insight, timestamp } = JSON.parse(cachedItem);
+                 // Cache for 5 minutes
+                 if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    setAiInsight(insight);
+                    return;
+                 }
             }
 
             setIsInsightLoading(true);
             setInsightError(null);
             try {
-                const insight = await getAIStockInsight(stock.name, stock.code, apiKey);
+                const insight = await getAIStockInsight(stock.name, stock.code);
                 setAiInsight(insight);
-                sessionStorage.setItem(cacheKey, insight);
+                sessionStorage.setItem(cacheKey, JSON.stringify({ insight, timestamp: Date.now() }));
             } catch (err) {
                 if (err instanceof Error) {
                     setInsightError(err.message);
@@ -94,17 +90,13 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
         };
 
         fetchInsight();
-    }, [stock, apiKey]);
+    }, [stock]);
     
     const handleDeepAnalysisClick = () => {
-        if (!apiKey) {
-            setShowApiError(true);
-            return;
-        }
-        setShowApiError(false);
         setIsButtonLoading(true);
         onStartAnalysis(stock.name, stock.code);
-        onClose();
+        // Don't close immediately to show loading state, App.tsx will change view
+        // onClose();
     };
 
     return (
@@ -162,14 +154,21 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                     </div>
 
                     <div className="mt-6">
-                        <div className="flex items-center gap-2 text-brand-gold font-semibold mb-3">
-                           <SparklesIcon className="w-5 h-5"/>
-                           <h4>AI 即時洞察</h4>
-                        </div>
-                         <div className="bg-slate-100 dark:bg-black/20 p-4 rounded-lg border border-light-border dark:border-dark-border text-sm min-h-[80px]">
-                           {isInsightLoading && <LoadingSpinner />}
-                           {insightError && <p className="text-positive/90">{insightError}</p>}
-                           {aiInsight && <p className="text-text-light-secondary dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                        <div className="relative p-4 rounded-lg border border-brand-gold/20 dark:border-brand-gold/30 bg-gradient-to-br from-brand-gold/5 to-transparent dark:from-brand-gold/10 dark:to-transparent overflow-hidden">
+                           <div className="absolute -top-10 -right-10 text-brand-gold/20 dark:text-brand-gold/20">
+                                <SparklesIcon className="w-24 h-24 transform rotate-12" />
+                           </div>
+                           <div className="relative z-10">
+                                <div className="flex items-center gap-2 text-brand-gold font-semibold mb-3">
+                                   <SparklesIcon className="w-5 h-5"/>
+                                   <h4>AI 即時洞察</h4>
+                                </div>
+                                 <div className="text-sm min-h-[60px]">
+                                   {isInsightLoading && <LoadingSpinner />}
+                                   {insightError && <p className="text-positive/90">{insightError}</p>}
+                                   {aiInsight && <p className="text-text-light-secondary dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -187,11 +186,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, onClose, onStartAnalysis
                         )}
                         一鍵深度洞察
                     </button>
-                    {showApiError && (
-                        <p className="text-xs text-positive text-center mt-2 animate-fade-in">
-                            請先至「AI 新聞分析」頁面設定 API 金鑰。
-                        </p>
-                    )}
                 </div>
             </div>
         </div>
