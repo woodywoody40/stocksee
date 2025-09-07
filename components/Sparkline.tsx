@@ -9,7 +9,7 @@ const Sparkline: React.FC<SparklineProps> = ({ data }) => {
   if (!data || data.length < 2) {
     return (
         <div className="flex items-center justify-center w-full h-full">
-            <p className="text-xs text-text-tertiary">N/A</p>
+            <p className="text-xs text-secondary-light dark:text-secondary-dark">無資料</p>
         </div>
     );
   }

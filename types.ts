@@ -1,4 +1,5 @@
 
+
 export interface Stock {
   code: string;
   name: string;
@@ -48,4 +49,19 @@ export interface StockListItem {
 export interface IndicatorPoint {
   date: string;
   value: number;
+}
+
+export interface QuarterlyFinancials {
+    quarter: string; // e.g., "2023Q4"
+    revenue: number; // 營業收入 (億元)
+    grossMargin: number; // 毛利率 (%)
+    operatingMargin: number; // 營業利益率 (%)
+    netMargin: number; // 稅後淨利率 (%)
+    eps: number; // 每股盈餘 (元)
+}
+
+export interface FinancialAnalysis {
+    data: QuarterlyFinancials[];
+    summary: string;
+    sources?: NewsSource[];
 }
