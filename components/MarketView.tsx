@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { fetchStockData } from '../services/stockService';
@@ -72,11 +73,37 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             }
 
             try {
-                // The stock service is not yet adapted for AbortController, so we handle cancellation logic here.
                 const data = await fetchStockData(codesToFetch);
                 if (!controller.signal.aborted) {
                     const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
-                    setStocks(sortedData);
+                    
+                    // Apply the same protective heuristic as the background refresh to prevent overwrites.
+                    setStocks(currentStocks => {
+                        // On initial load, there's no existing data to protect, so accept the fetched data.
+                        if (currentStocks.length === 0) {
+                            return sortedData;
+                        }
+
+                        const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
+                        const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
+
+                        return allCodes.map(code => {
+                            const currentStock = currentStocks.find(s => s.code === code);
+                            const newStock = newStocksMap.get(code);
+
+                            if (!newStock) return currentStock;
+                            if (!currentStock) return newStock;
+
+                            const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
+                            const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
+
+                            if (currentHasTraded && newIsPreMarket) {
+                                return currentStock; // An API glitch likely occurred; keep the last known good price.
+                            }
+                            
+                            return newStock;
+                        }).filter((s): s is Stock => s !== undefined);
+                    });
                 }
             } catch (err) {
                  if (!controller.signal.aborted) {
@@ -104,13 +131,29 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             try {
                 const data = await fetchStockData(codesToFetch);
                 const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
+                
                 setStocks(currentStocks => {
                     const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-                    const currentCodes = currentStocks.map(s => s.code);
-                    const newCodes = sortedData.map(s => s.code);
-                    const allCodes = Array.from(new Set([...currentCodes, ...newCodes]));
-                    
-                    return allCodes.map(code => newStocksMap.get(code) || currentStocks.find(s => s.code === code)).filter(Boolean) as Stock[];
+                    const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
+
+                    return allCodes.map(code => {
+                        const currentStock = currentStocks.find(s => s.code === code);
+                        const newStock = newStocksMap.get(code);
+
+                        if (!newStock) return currentStock; // Keep old data if new is missing
+                        if (!currentStock) return newStock; // Add new stock if it's not currently tracked
+
+                        // Heuristic to detect if the API flaked and returned pre-market data mid-day.
+                        // If we already have a valid traded price, we should not revert to yesterday's closing price.
+                        const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
+                        const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
+
+                        if (currentHasTraded && newIsPreMarket) {
+                            return currentStock; // An API glitch likely occurred; keep the last known good price.
+                        }
+                        
+                        return newStock; // Otherwise, update with the latest data from the API.
+                    }).filter((s): s is Stock => s !== undefined);
                 });
             } catch (err) {
                 console.error("Background refresh failed:", err);

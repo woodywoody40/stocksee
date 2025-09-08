@@ -16,8 +16,15 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement> & { isFilled: boolean }> 
 );
 
 const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchlist, onCardClick }) => {
-    const isPositive = stock.change >= 0;
-    const priceColor = isPositive ? 'text-positive' : 'text-negative';
+    const changeIsPositive = stock.change > 0;
+    const changeIsNegative = stock.change < 0;
+
+    const priceColor = changeIsPositive
+        ? 'text-positive'
+        : changeIsNegative
+        ? 'text-negative'
+        : 'text-on-surface-light dark:text-on-surface-dark'; // Neutral color for zero change
+
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
 
     const handleStarClick = (e: React.MouseEvent) => {
@@ -48,8 +55,8 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
                     <div className="text-left">
                         <p className={`text-3xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
                         <div className={`text-sm font-semibold ${priceColor}`}>
-                            <span>{isPositive ? '▲' : '▼'}</span>
-                            <span> {stock.change.toFixed(2)}</span>
+                            <span>{changeIsPositive ? '▲' : changeIsNegative ? '▼' : ''}</span>
+                            <span className={changeIsPositive || changeIsNegative ? 'ml-1' : ''}>{stock.change.toFixed(2)}</span>
                             <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
                         </div>
                     </div>
