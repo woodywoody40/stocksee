@@ -81,11 +81,7 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
     }
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `你是一位頂尖的財經新聞專家，專精於台灣股市的即時動態。你的任務是使用網路搜尋能力，為台灣股票「${stockName} (${stockCode})」找出**今天（過去 24 小時內）最重要的一篇**財經新聞。
-
-你的回覆必須**只包含該新聞報導的「完整內文」或「詳盡摘要」**，必須客觀、中立，並且不包含任何前言、標題或個人評論。
-
-**重要**: 一家活躍的上市公司必定會有近期的相關新聞。如果第一時間找不到，請擴大搜尋範圍至各大財經新聞網站（例如：鉅亨網、經濟日報、工商時報），務必回傳一篇最相關的新聞內容。絕不可回覆找不到新聞。`;
+    const prompt = `請使用網路搜尋，尋找關於台灣股票「${stockName} (${stockCode})」的最新財經新聞，並提供一篇約 150-200 字的繁體中文摘要。請確保摘要內容客觀，並僅基於你搜尋到的新聞來源。`;
 
     try {
         const response = await ai.models.generateContent({
