@@ -20,10 +20,12 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h2 className="text-2xl font-bold mb-6 text-on-background-light dark:text-on-background-dark tracking-wide flex items-center gap-3">
-        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+    <div className="flex items-center gap-3 mb-6">
+      <span className="w-2 h-7 bg-primary rounded-full"></span>
+      <h2 className="text-2xl font-bold text-on-background-light dark:text-on-background-dark tracking-wide">
         {children}
-    </h2>
+      </h2>
+    </div>
 );
 
 interface MarketViewProps {
@@ -73,7 +75,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             }
 
             try {
-                const data = await fetchStockData(codesToFetch);
+                const data = await fetchStockData(codesToFetch, fullStockList);
                 if (!controller.signal.aborted) {
                     const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
                     
@@ -107,7 +109,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 }
             } catch (err) {
                  if (!controller.signal.aborted) {
-                    setError('無法獲取股票資料，請稍後再試。');
+                    setError(err instanceof Error ? err.message : '無法獲取股票資料，請稍後再試。');
                     console.error(err);
                 }
             } finally {
@@ -122,14 +124,14 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         return () => {
             controller.abort();
         };
-    }, [codesToFetch]);
+    }, [codesToFetch, fullStockList]);
 
     // Effect for background refresh interval
     useEffect(() => {
         const intervalId = setInterval(async () => {
             if (codesToFetch.length === 0 || document.hidden) return;
             try {
-                const data = await fetchStockData(codesToFetch);
+                const data = await fetchStockData(codesToFetch, fullStockList);
                 const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
                 
                 setStocks(currentStocks => {
@@ -161,7 +163,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         }, REFRESH_INTERVAL);
 
         return () => clearInterval(intervalId);
-    }, [codesToFetch]);
+    }, [codesToFetch, fullStockList]);
 
 
     const toggleWatchlist = useCallback((code: string) => {

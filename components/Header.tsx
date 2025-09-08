@@ -25,12 +25,12 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const getTabClass = (tab: Tab) =>
     `flex items-center justify-center flex-shrink-0 whitespace-nowrap gap-2 px-4 py-2 rounded-lg text-sm font-semibold outline-none transition-all duration-300 ease-in-out ${
       activeTab === tab
-        ? 'bg-primary text-on-primary shadow-md'
+        ? 'bg-primary text-on-primary shadow-md shadow-primary/30'
         : 'text-secondary-light dark:text-secondary-dark hover:bg-primary/10'
     }`;
 
   return (
-    <header className="sticky top-0 z-40 bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-lg border-b border-outline-light dark:border-outline-dark">
+    <header className="sticky top-0 z-40 bg-surface-light/80 dark:bg-background-dark/50 backdrop-blur-lg border-b border-outline-light dark:border-outline-dark">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-3">

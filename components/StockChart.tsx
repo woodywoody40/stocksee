@@ -77,15 +77,19 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
         tooltipCircleRef.current.setAttribute('cx', `${point.x}`);
         tooltipCircleRef.current.setAttribute('cy', `${point.y}`);
 
-        tooltipTextRef.current.innerHTML = `<div class="text-center">${point.data.date}</div><div class="font-bold text-center">${point.data.close.toFixed(2)}</div>`;
+        tooltipTextRef.current.innerHTML = `<div class="text-xs text-secondary-dark text-center">${point.data.date}</div><div class="font-bold text-center text-on-surface-dark">${point.data.close.toFixed(2)}</div>`;
         
         const onScreenX = (point.x / svgWidth) * svgRect.width;
         const tooltipWidth = tooltipTextRef.current.offsetWidth;
-        let textX = onScreenX + 15; // Position to the right by default
-        if (tooltipWidth > 0 && textX + tooltipWidth > svgRect.width - 5) {
-            textX = onScreenX - tooltipWidth - 15; // Flip to the left
-        }
-        tooltipTextRef.current.style.transform = `translateX(${textX}px)`;
+        const tooltipHeight = tooltipTextRef.current.offsetHeight;
+
+        let textX = onScreenX - (tooltipWidth / 2);
+        
+        // Keep tooltip within horizontal bounds
+        if (textX < 5) textX = 5;
+        if (textX + tooltipWidth > svgRect.width - 5) textX = svgRect.width - tooltipWidth - 5;
+        
+        tooltipTextRef.current.style.transform = `translateX(${textX}px) translateY(${svgRect.top - tooltipHeight - 10}px)`;
 
     }, [points, xStep, svgWidth]);
 
@@ -160,17 +164,10 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
                 </g>
             </svg>
             
-            <div className="absolute top-0 right-0 flex items-center text-xs p-1 space-x-2 bg-surface-dark/50 rounded-bl-md">
-                <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-0.5" style={{ backgroundColor: priceColor }}></div>
-                    <span className="text-secondary-dark font-mono">股價</span>
-                </div>
-            </div>
-            
             <div
                 ref={tooltipTextRef}
-                className="absolute top-2 bg-black/70 text-white text-xs rounded-md p-2 pointer-events-none z-10"
-                style={{ opacity: 0, transition: 'opacity 0.1s ease, transform 0.1s ease' }}
+                className="fixed top-0 left-0 bg-surface-dark/90 backdrop-blur-sm border border-outline-dark text-white text-xs rounded-md p-2 pointer-events-none z-50 shadow-lg"
+                style={{ opacity: 0, transition: 'opacity 0.1s ease' }}
             >
                 {/* Content is set via innerHTML */}
             </div>

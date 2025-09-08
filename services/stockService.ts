@@ -1,94 +1,100 @@
 
-import { Stock, HistoricalDataPoint } from '../types';
-
-// Interface for the structure of a single stock object from the TWSE getStockInfo API response
-interface TwseStock {
-    c: string; // code
-    n: string; // name
-    z: string; // price
-    v: string; // volume
-    o: string; // open
-    h: string; // high
-    l: string; // low
-    y: string; // yesterday's price
-}
+import { Stock, HistoricalDataPoint, FinancialDataPoint, StockListItem } from '../types';
 
 /**
- * Fetches real-time stock data from the Taiwan Stock Exchange (TWSE) API.
- * Due to browser CORS (Cross-Origin Resource Sharing) policies, we must use a proxy
- * to fetch data from the TWSE domain. This function routes the request through a
- * public CORS proxy to enable access.
+ * Fetches real-time stock data from the official Taiwan Stock Exchange (TWSE) MIS API.
+ * This is more reliable and accurate than scraping.
  * @param codes - An array of stock codes to fetch data for.
+ * @param stockList - The full list of stocks containing market information.
  * @returns A promise that resolves to an array of Stock objects.
  */
-export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
+export const fetchStockData = async (codes: string[], stockList: StockListItem[]): Promise<Stock[]> => {
     if (codes.length === 0) {
         return [];
     }
 
-    const query = codes.flatMap(code => [`tse_${code}.tw`, `otc_${code}.tw`]).join('|');
-    const apiUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${query}&json=1&delay=0&_=${Date.now()}`;
-    
-    // Use a more reliable CORS proxy
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    const stockMap = new Map(stockList.map(s => [s.code, s]));
+
+    const exChList = codes
+        .map(code => {
+            const stockInfo = stockMap.get(code);
+            const market = stockInfo?.market;
+            // Default to 'tse' (上市) if market is unknown.
+            const prefix = market === '上櫃' ? 'otc' : 'tse';
+            return `${prefix}_${code}.tw`;
+        })
+        .join('|');
+
+    const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${exChList}&_=${Date.now()}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
     try {
         const response = await fetch(proxyUrl);
         if (!response.ok) {
-            const errorBody = await response.text();
-            console.error(`Proxy request failed with status ${response.status}:`, errorBody.substring(0, 500));
-            throw new Error(`Network response was not ok: ${response.statusText}`);
+            throw new Error(`MIS API request failed with status ${response.status}`);
+        }
+        const json = await response.json();
+
+        if (!json.msgArray || json.msgArray.length === 0) {
+            console.warn("MIS API returned no data", json);
+            // This can happen if all requested stocks are invalid, so we return an empty array.
+            if (codes.length > 0) {
+                 throw new Error("無法獲取任何股票資料。請檢查您的網路連線或稍後再試。");
+            }
+            return [];
+        }
+
+        const stocks: Stock[] = json.msgArray
+            .map((data: any) => {
+                // Robust parsing: convert to string, handle potential nulls, and remove commas.
+                const priceStr = String(data.z || '').replace(/,/g, '');
+                const price = parseFloat(priceStr);
+                const yesterdayPrice = parseFloat(String(data.y || '').replace(/,/g, ''));
+                const open = parseFloat(String(data.o || '').replace(/,/g, ''));
+                const high = parseFloat(String(data.h || '').replace(/,/g, ''));
+                const low = parseFloat(String(data.l || '').replace(/,/g, ''));
+                // Use `tv` (total volume in lots) instead of `v` (last trade volume).
+                const totalVolumeInLots = parseInt(String(data.tv || '').replace(/,/g, ''), 10);
+
+                if (isNaN(yesterdayPrice)) {
+                    return null; // Cannot proceed without a reference price.
+                }
+                
+                // If price is not a number (e.g., '-'), the stock hasn't traded.
+                // Display yesterday's price with 0 change for a better UX.
+                const displayPrice = isNaN(price) ? yesterdayPrice : price;
+                const change = isNaN(price) ? 0 : displayPrice - yesterdayPrice;
+                const changePercent = yesterdayPrice !== 0 ? (change / yesterdayPrice) * 100 : 0;
+                
+                const validOpen = isNaN(open) ? yesterdayPrice : open;
+                const stockInfo = stockMap.get(data.c);
+
+                return {
+                    code: data.c,
+                    name: stockInfo?.name || data.n,
+                    price: displayPrice,
+                    change: parseFloat(change.toFixed(2)),
+                    changePercent: parseFloat(changePercent.toFixed(2)),
+                    open: validOpen,
+                    // If high/low are not available, they should be at least the opening price.
+                    high: isNaN(high) ? validOpen : high,
+                    low: isNaN(low) ? validOpen : low,
+                    volume: isNaN(totalVolumeInLots) ? 0 : totalVolumeInLots,
+                    yesterdayPrice: yesterdayPrice,
+                };
+            })
+            .filter((stock): stock is Stock => stock !== null);
+            
+        if (codes.length > 0 && stocks.length === 0) {
+             throw new Error("無法獲取任何股票資料。請檢查您的網路連線或稍後再試。");
         }
         
-        const responseText = await response.text();
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (jsonError) {
-            console.error("Failed to parse stock data JSON from proxy. Response text:", responseText.substring(0, 500));
-            throw new Error("無法解析從證交所收到的資料。 API 可能暫時無法使用。");
-        }
-
-        if (!data || !data.msgArray || data.msgArray.length === 0) {
-            return []; // No data for the given codes, not an error.
-        }
-
-        const stocks: Stock[] = data.msgArray.map((item: TwseStock) => {
-            const yesterdayPrice = parseFloat(item.y);
-            
-            // The API returns '-' for untraded stocks (e.g., pre-market).
-            const hasTraded = item.z && item.z !== '-';
-
-            const price = hasTraded ? parseFloat(item.z) : yesterdayPrice;
-            const open = (item.o && item.o !== '-') ? parseFloat(item.o) : yesterdayPrice;
-            const high = (item.h && item.h !== '-') ? parseFloat(item.h) : yesterdayPrice;
-            const low = (item.l && item.l !== '-') ? parseFloat(item.l) : yesterdayPrice;
-            const volume = parseInt(item.v, 10) || 0;
-
-            const change = hasTraded ? price - yesterdayPrice : 0;
-            const changePercent = yesterdayPrice > 0 ? (change / yesterdayPrice) * 100 : 0;
-
-            // Final check for any potential NaN values to ensure data integrity
-            return {
-                code: item.c,
-                name: item.n,
-                price: isNaN(price) ? 0 : price,
-                change: isNaN(change) ? 0 : parseFloat(change.toFixed(2)),
-                changePercent: isNaN(changePercent) ? 0 : parseFloat(changePercent.toFixed(2)),
-                open: isNaN(open) ? 0 : open,
-                high: isNaN(high) ? 0 : high,
-                low: isNaN(low) ? 0 : low,
-                volume: isNaN(volume) ? 0 : volume,
-                yesterdayPrice: isNaN(yesterdayPrice) ? 0 : yesterdayPrice,
-            };
-        });
-
-        const uniqueStocks = Array.from(new Map(stocks.map(stock => [stock.code, stock])).values());
-        return uniqueStocks;
+        return stocks;
 
     } catch (error) {
-        console.error("Failed to fetch real stock data via CORS proxy:", error);
-        throw new Error("無法從台灣證券交易所獲取即時資料。這可能是暫時性網路問題或 CORS Proxy 服務不穩定所致。");
+        console.error("Failed to fetch real stock data from MIS API:", error);
+        if (error instanceof Error) throw error;
+        throw new Error("無法從證交所 MIS API 獲取即時資料。");
     }
 };
 
@@ -209,4 +215,108 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
         }
         throw new Error("無法獲取歷史股價資料。");
     }
+};
+
+const findRowValue = (doc: Document, titles: string[]): number | null => {
+    const allTds = Array.from(doc.querySelectorAll('td'));
+    for (const title of titles) {
+        const targetTd = allTds.find(td => td.textContent?.trim() === title);
+        if (targetTd && targetTd.nextElementSibling) {
+            const valueStr = targetTd.nextElementSibling.textContent?.trim().replace(/,/g, '');
+            if (valueStr && valueStr !== '') {
+                if (valueStr.startsWith('(') && valueStr.endsWith(')')) {
+                    return -parseFloat(valueStr.substring(1, valueStr.length - 1));
+                }
+                const num = parseFloat(valueStr);
+                return isNaN(num) ? null : num;
+            }
+        }
+    }
+    return null;
+};
+
+const parseFinancialReportHtml = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // MOPS uses multiple variations for these terms across different reports/companies.
+    const revenue = findRowValue(doc, ['營業收入合計', '營業收入']);
+    const grossProfit = findRowValue(doc, ['營業毛利（毛損）淨額', '營業毛利（毛損）']);
+    const operatingIncome = findRowValue(doc, ['營業利益（損失）', '營業利益']);
+    const netIncome = findRowValue(doc, ['本期淨利（淨損）', '本期綜合損益總額']);
+
+    return { revenue, grossProfit, operatingIncome, netIncome };
+};
+
+export const fetchFinancialData = async (code: string): Promise<FinancialDataPoint[]> => {
+    const apiUrl = 'https://mops.twse.com.tw/mops/web/ajax_t163sb04';
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    
+    const quartersToFetch: { year: number; season: string; }[] = [];
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentQuarter = Math.floor(today.getMonth() / 3) + 1;
+
+    for (let i = 0; i < 5; i++) {
+        quartersToFetch.push({ year: currentYear - 1911, season: String(currentQuarter).padStart(2, '0') });
+        currentQuarter--;
+        if (currentQuarter === 0) {
+            currentQuarter = 4;
+            currentYear--;
+        }
+    }
+
+    const results: FinancialDataPoint[] = [];
+
+    for (const { year, season } of quartersToFetch) {
+        try {
+            const formData = new URLSearchParams();
+            formData.append('encodeURIComponent', '1');
+            formData.append('step', '1');
+            formData.append('firstin', '1');
+            formData.append('off', '1');
+            formData.append('co_id', code);
+            formData.append('TYPEK', 'sii');
+            formData.append('year', String(year));
+            formData.append('season', season);
+            
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            });
+
+            if (!response.ok) continue;
+
+            const html = await response.text();
+            if (html.includes("查無資料")) continue;
+
+            const { revenue, grossProfit, operatingIncome, netIncome } = parseFinancialReportHtml(html);
+            
+            if (revenue && revenue > 0 && grossProfit !== null && operatingIncome !== null && netIncome !== null) {
+                // Values from MOPS are in thousands, convert to billions (億元)
+                const revenueInBillions = parseFloat((revenue / 100000).toFixed(2));
+                const grossMargin = parseFloat(((grossProfit / revenue) * 100).toFixed(2));
+                const operatingMargin = parseFloat(((operatingIncome / revenue) * 100).toFixed(2));
+                const netMargin = parseFloat(((netIncome / revenue) * 100).toFixed(2));
+
+                results.push({
+                    quarter: `${year}Q${parseInt(season, 10)}`,
+                    revenue: revenueInBillions,
+                    grossMargin,
+                    operatingMargin,
+                    netMargin
+                });
+            }
+        } catch (error) {
+            console.error(`Failed to fetch financial data for ${year}Q${season}:`, error);
+        }
+    }
+
+    // Return the latest 4 quarters, sorted from oldest to newest for charting.
+    const finalResults = results.slice(0, 4).reverse();
+    if (finalResults.length === 0) {
+        throw new Error('無法從公開資訊觀測站獲取此股票的財務報表。');
+    }
+    return finalResults;
 };

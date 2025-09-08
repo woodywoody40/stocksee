@@ -25,6 +25,12 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
         ? 'text-negative'
         : 'text-on-surface-light dark:text-on-surface-dark'; // Neutral color for zero change
 
+    const glowClass = changeIsPositive
+        ? 'shadow-glow-positive'
+        : changeIsNegative
+        ? 'shadow-glow-negative'
+        : '';
+    
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
 
     const handleStarClick = (e: React.MouseEvent) => {
@@ -34,8 +40,9 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
 
     return (
         <div 
-            className={`relative bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1 hover:shadow-xl shadow-lg shadow-gray-100 dark:shadow-none`}
+            className={`relative bg-surface-light/90 dark:bg-surface-dark/80 border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1.5 hover:shadow-2xl ${glowClass}`}
             onClick={() => onCardClick(stock)}
+            style={{boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.05)'}}
         >
             <div className="relative z-10">
                 <div className="flex justify-between items-start">

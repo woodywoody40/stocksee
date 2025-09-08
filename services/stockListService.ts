@@ -46,7 +46,7 @@ const parseIsinHtml = (html: string): StockListItem[] => {
                 !industry.includes('熊證') &&
                 !industry.includes('指數投資證券')
             ) {
-                stocks.push({ code, name });
+                stocks.push({ code, name, market: marketType });
             }
         }
     });
@@ -108,8 +108,8 @@ const fetchFullListFromApi = async (): Promise<StockListItem[]> => {
         const mergedList = uniqueStocks.map(liveStock => {
             const staticInfo = staticStockMap.get(liveStock.code);
             if (staticInfo) {
-                // Prefer the curated name and alias for better searchability, e.g., for names with "-KY".
-                return { code: liveStock.code, name: staticInfo.name, alias: staticInfo.alias };
+                // Prefer the curated name and alias for better searchability, but keep the market type from live data.
+                return { code: liveStock.code, name: staticInfo.name, alias: staticInfo.alias, market: liveStock.market };
             }
             // If not in our curated list, use the live data as-is.
             return liveStock;

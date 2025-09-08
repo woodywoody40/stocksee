@@ -1,4 +1,5 @@
 
+
 export interface Stock {
   code: string;
   name: string;
@@ -42,10 +43,19 @@ export interface StockListItem {
   code: string;
   name: string;
   alias?: string[];
+  market?: string;
 }
 
 // FIX: Export the `IndicatorPoint` interface for technical analysis data.
 export interface IndicatorPoint {
   date: string;
   value: number;
+}
+
+export interface FinancialDataPoint {
+  quarter: string; // e.g., "112Q4"
+  revenue: number; // 營業收入 (in 億元)
+  grossMargin: number; // 毛利率 (%)
+  operatingMargin: number; // 營業利益率 (%)
+  netMargin: number; // 稅後淨利率 (%)
 }

@@ -1,6 +1,7 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResult, NewsArticle, NewsSource } from '../types';
+import { AnalysisResult, NewsArticle, NewsSource, FinancialDataPoint } from '../types';
 
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
@@ -113,5 +114,51 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
             throw new Error('您提供的 API 金鑰無效或已過期。');
         }
         throw new Error("AI 搜尋新聞時發生錯誤，請稍後再試。");
+    }
+};
+
+export const getAIFinancialAnalysis = async (apiKey: string, stockName: string, financialData: FinancialDataPoint[]): Promise<string> => {
+    if (!apiKey) {
+        throw new Error("API 金鑰未設定。");
+    }
+     if (financialData.length === 0) {
+        return "缺乏足夠的財務數據進行分析。";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const dataTable = financialData.map(d => 
+        `| ${d.quarter.padEnd(6)} | ${d.revenue.toFixed(2).padStart(10)} 億 | ${d.grossMargin.toFixed(2).padStart(8)}% | ${d.operatingMargin.toFixed(2).padStart(10)}% | ${d.netMargin.toFixed(2).padStart(10)}% |`
+    ).join('\n');
+
+    const prompt = `你是一位頂尖的台灣股市財務分析師。請僅根據以下提供給「${stockName}」的季度財務數據，以專業但簡潔的語言，用繁體中文提供一個約 3-4 句話的財務狀況總評。
+
+你的分析應專注於：
+1.  **營收趨勢**：營收是成長、衰退還是持平？
+2.  **獲利能力**：毛利率、營業利益率和稅後淨利率的表現如何？它們是穩定、提升還是下滑？
+3.  **整體結論**：綜合來看，公司的財務表現是強勁、穩健、有待改善還是呈現警訊？
+
+**財務數據:**
+| 季度     | 營業收入     | 毛利率    | 營業利益率     | 稅後淨利率     |
+|----------|--------------|-----------|----------------|----------------|
+${dataTable}
+
+請直接提供總評，不要有任何前言或結語。`;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                temperature: 0.3,
+            },
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error getting AI financial analysis:", error);
+        if (error instanceof Error && error.message.includes('API key not valid')) {
+            throw new Error('您提供的 API 金鑰無效，請檢查後再試。');
+        }
+        throw new Error("AI 財務分析失敗，請稍後再試。");
     }
 };
