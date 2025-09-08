@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Stock, HistoricalDataPoint } from '../types';
-import { getAIStockInsight } from '../services/geminiService';
 import { fetchHistoricalData } from '../services/stockService';
 import StockChart from './StockChart';
 
@@ -57,9 +56,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const chartColor = isPositive ? '#ef4444' : '#22c55e';
     
-    const [aiInsight, setAiInsight] = useState<string | null>(null);
-    const [isInsightLoading, setIsInsightLoading] = useState(false);
-    const [insightError, setInsightError] = useState<string | null>(null);
     const [isClosing, setIsClosing] = useState(false);
     
     const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
@@ -114,31 +110,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
         loadHistoricalData();
     }, [stock.code, stock.price]);
 
-    useEffect(() => {
-        const fetchInsight = async () => {
-            if (!apiKey) {
-                setInsightError("請先至「AI 新聞分析」頁面設定 API 金鑰。");
-                return;
-            }
-            setIsInsightLoading(true);
-            setInsightError(null);
-            try {
-                const insight = await getAIStockInsight(apiKey, stock.name, stock.code);
-                setAiInsight(insight);
-            } catch (err) {
-                if (err instanceof Error) {
-                    setInsightError(err.message);
-                } else {
-                    setInsightError("無法生成 AI 洞察，請稍後再試。");
-                }
-            } finally {
-                setIsInsightLoading(false);
-            }
-        };
-
-        fetchInsight();
-    }, [stock, apiKey]);
-    
     const handleDeepAnalysisClick = () => {
         onStartAnalysis(stock.name, stock.code);
     };
@@ -204,23 +175,6 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                         <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
                         <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
                         <DetailItem label="成交量" value={`${Math.floor(stock.volume / 1000).toLocaleString()} 張`} />
-                    </div>
-                     
-                    <div className="relative p-4 rounded-xl border border-brand-orange/40 bg-gradient-to-br from-brand-orange/10 to-transparent">
-                       <div className="absolute -top-1 -right-1 text-brand-orange/20">
-                            <SparklesIcon className="w-16 h-16 transform rotate-12" />
-                       </div>
-                       <div className="relative z-10">
-                            <div className="flex items-center gap-2 text-brand-orange font-semibold mb-2">
-                               <SparklesIcon className="w-5 h-5"/>
-                               <h4>AI 即時洞察</h4>
-                            </div>
-                             <div className="text-sm min-h-[50px]">
-                               {isInsightLoading ? <LoadingSpinner small /> :
-                               insightError ? <p className="text-positive/90">{insightError}</p> :
-                               aiInsight && <p className="text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
-                            </div>
-                        </div>
                     </div>
 
                     <button
