@@ -140,7 +140,7 @@ const FinancialsTab: React.FC<{ stock: Stock, apiKey: string }> = ({ stock, apiK
             setAiSummary(null);
 
             try {
-                const data = await fetchFinancialData(stock.code);
+                const data = await fetchFinancialData(stock);
                 setFinancialData(data);
                 
                 try {
@@ -165,7 +165,7 @@ const FinancialsTab: React.FC<{ stock: Stock, apiKey: string }> = ({ stock, apiK
              setIsFinancialsLoading(false);
              setIsAiLoading(false);
         }
-    }, [stock.code, stock.name, apiKey]);
+    }, [stock, apiKey]);
 
     if (isFinancialsLoading) {
         return <div className="py-10"><LoadingSpinner /></div>;
@@ -175,7 +175,7 @@ const FinancialsTab: React.FC<{ stock: Stock, apiKey: string }> = ({ stock, apiK
         return <div className="text-center py-10 text-positive/90 text-sm">{financialsError}</div>;
     }
 
-    if (!financialData || financialData.length < 4) {
+    if (!financialData || financialData.length < 1) {
         return <div className="text-center py-10 text-secondary-dark text-sm">此股票缺乏足夠的季度財務數據。</div>;
     }
 

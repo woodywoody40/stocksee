@@ -11,6 +11,7 @@ export interface Stock {
   low: number;
   volume: number;
   yesterdayPrice: number;
+  market?: string;
 }
 
 export interface AnalysisResult {

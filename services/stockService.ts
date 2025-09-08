@@ -1,4 +1,5 @@
 
+
 import { Stock, HistoricalDataPoint, FinancialDataPoint, StockListItem } from '../types';
 
 /**
@@ -31,9 +32,18 @@ export const fetchStockData = async (codes: string[], stockList: StockListItem[]
     try {
         const response = await fetch(proxyUrl);
         if (!response.ok) {
-            throw new Error(`MIS API request failed with status ${response.status}`);
+            throw new Error(`Proxy request failed with status ${response.status}`);
         }
-        const json = await response.json();
+        
+        const text = await response.text();
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch (e) {
+            console.error("Failed to parse MIS API data from proxy. Response:", text?.substring(0, 500));
+            throw new Error('API 回應格式錯誤，可能是暫時的網路問題或服務中斷。');
+        }
+
 
         if (!json.msgArray || json.msgArray.length === 0) {
             console.warn("MIS API returned no data", json);
@@ -72,6 +82,7 @@ export const fetchStockData = async (codes: string[], stockList: StockListItem[]
                 return {
                     code: data.c,
                     name: stockInfo?.name || data.n,
+                    market: stockInfo?.market, // Pass market type for financial data fetching
                     price: displayPrice,
                     change: parseFloat(change.toFixed(2)),
                     changePercent: parseFloat(changePercent.toFixed(2)),
@@ -152,12 +163,12 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
 
             for (const response of responses) {
                 if (response.ok) {
-                    const responseText = await response.text();
+                    const text = await response.text();
                     try {
-                        const json = JSON.parse(responseText);
+                        const json = JSON.parse(text);
                         combinedData.push(...currentSource.getData(json));
                     } catch (e) {
-                        console.warn(`Failed to parse historical data for ${sourceKey}. URL: ${response.url}, Body:`, responseText.substring(0, 200));
+                        console.warn(`Failed to parse historical data for ${sourceKey}. URL: ${response.url}, Body:`, text?.substring(0, 200));
                     }
                 }
             }
@@ -217,106 +228,122 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
     }
 };
 
-const findRowValue = (doc: Document, titles: string[]): number | null => {
-    const allTds = Array.from(doc.querySelectorAll('td'));
-    for (const title of titles) {
-        const targetTd = allTds.find(td => td.textContent?.trim() === title);
-        if (targetTd && targetTd.nextElementSibling) {
-            const valueStr = targetTd.nextElementSibling.textContent?.trim().replace(/,/g, '');
-            if (valueStr && valueStr !== '') {
-                if (valueStr.startsWith('(') && valueStr.endsWith(')')) {
-                    return -parseFloat(valueStr.substring(1, valueStr.length - 1));
-                }
-                const num = parseFloat(valueStr);
-                return isNaN(num) ? null : num;
-            }
-        }
-    }
-    return null;
-};
-
-const parseFinancialReportHtml = (html: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    // MOPS uses multiple variations for these terms across different reports/companies.
-    const revenue = findRowValue(doc, ['營業收入合計', '營業收入']);
-    const grossProfit = findRowValue(doc, ['營業毛利（毛損）淨額', '營業毛利（毛損）']);
-    const operatingIncome = findRowValue(doc, ['營業利益（損失）', '營業利益']);
-    const netIncome = findRowValue(doc, ['本期淨利（淨損）', '本期綜合損益總額']);
-
-    return { revenue, grossProfit, operatingIncome, netIncome };
-};
-
-export const fetchFinancialData = async (code: string): Promise<FinancialDataPoint[]> => {
-    const apiUrl = 'https://mops.twse.com.tw/mops/web/ajax_t163sb04';
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-    
-    const quartersToFetch: { year: number; season: string; }[] = [];
-    const today = new Date();
-    let currentYear = today.getFullYear();
-    let currentQuarter = Math.floor(today.getMonth() / 3) + 1;
-
-    for (let i = 0; i < 5; i++) {
-        quartersToFetch.push({ year: currentYear - 1911, season: String(currentQuarter).padStart(2, '0') });
-        currentQuarter--;
-        if (currentQuarter === 0) {
-            currentQuarter = 4;
-            currentYear--;
-        }
-    }
-
+/**
+ * Fetches quarterly financial data by scraping the official Market Observation Post System (MOPS).
+ * @param stock - The stock object, which includes the code and market type.
+ * @returns A promise that resolves to an array of FinancialDataPoint objects.
+ */
+export const fetchFinancialData = async (stock: Stock): Promise<FinancialDataPoint[]> => {
+    const code = stock.code;
+    const marketType = stock.market === '上櫃' ? 'otc' : 'sii';
     const results: FinancialDataPoint[] = [];
 
-    for (const { year, season } of quartersToFetch) {
-        try {
+    // Determine the latest completed quarter to start fetching from.
+    const today = new Date();
+    let year = today.getFullYear();
+    let quarter = Math.floor((today.getMonth()) / 3); // Current quarter (0-3 -> Q1-Q4)
+    if (quarter === 0) {
+        quarter = 4;
+        year -= 1;
+    }
+
+    try {
+        for (let i = 0; i < 4; i++) {
+            const rocYear = year - 1911;
+            const season = String(quarter).padStart(2, '0');
+
             const formData = new URLSearchParams();
             formData.append('encodeURIComponent', '1');
             formData.append('step', '1');
             formData.append('firstin', '1');
             formData.append('off', '1');
-            formData.append('co_id', code);
-            formData.append('TYPEK', 'sii');
-            formData.append('year', String(year));
+            formData.append('TYPEK', marketType);
+            formData.append('year', String(rocYear));
             formData.append('season', season);
+            formData.append('co_id', code);
+            
+            const url = 'https://mopsov.twse.com.tw/mops/web/t163sb01';
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
             
             const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString()
+                body: formData.toString(),
             });
 
-            if (!response.ok) continue;
+            if (response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
 
-            const html = await response.text();
-            if (html.includes("查無資料")) continue;
+                const rows = doc.querySelectorAll('table.hasBorder tr');
+                const dataMap = new Map<string, number>();
 
-            const { revenue, grossProfit, operatingIncome, netIncome } = parseFinancialReportHtml(html);
-            
-            if (revenue && revenue > 0 && grossProfit !== null && operatingIncome !== null && netIncome !== null) {
-                // Values from MOPS are in thousands, convert to billions (億元)
-                const revenueInBillions = parseFloat((revenue / 100000).toFixed(2));
-                const grossMargin = parseFloat(((grossProfit / revenue) * 100).toFixed(2));
-                const operatingMargin = parseFloat(((operatingIncome / revenue) * 100).toFixed(2));
-                const netMargin = parseFloat(((netIncome / revenue) * 100).toFixed(2));
+                rows.forEach(row => {
+                    const tableRow = row as HTMLTableRowElement;
+                    const titleCell = tableRow.cells[0]?.textContent?.trim().replace(/\s/g, '');
+                    let valueCell = tableRow.cells[1]?.textContent?.trim().replace(/,/g, '');
 
-                results.push({
-                    quarter: `${year}Q${parseInt(season, 10)}`,
-                    revenue: revenueInBillions,
-                    grossMargin,
-                    operatingMargin,
-                    netMargin
+                    if (titleCell && valueCell) {
+                        // Handle negative numbers represented by parentheses, e.g., (123,456)
+                        const isNegative = valueCell.startsWith('(') && valueCell.endsWith(')');
+                        if (isNegative) {
+                            valueCell = '-' + valueCell.substring(1, valueCell.length - 1);
+                        }
+                        
+                        const value = parseFloat(valueCell);
+                        if (!isNaN(value)) {
+                            if (titleCell.includes('營業收入')) dataMap.set('revenue', value);
+                            else if (titleCell.includes('營業毛利')) dataMap.set('grossProfit', value);
+                            else if (titleCell.includes('營業利益')) dataMap.set('operatingIncome', value);
+                            else if (titleCell.includes('本期淨利')) dataMap.set('netIncome', value);
+                        }
+                    }
                 });
-            }
-        } catch (error) {
-            console.error(`Failed to fetch financial data for ${year}Q${season}:`, error);
-        }
-    }
+                
+                const revenue = dataMap.get('revenue');
+                const grossProfit = dataMap.get('grossProfit');
+                const operatingIncome = dataMap.get('operatingIncome');
+                const netIncome = dataMap.get('netIncome');
 
-    // Return the latest 4 quarters, sorted from oldest to newest for charting.
-    const finalResults = results.slice(0, 4).reverse();
-    if (finalResults.length === 0) {
-        throw new Error('無法從公開資訊觀測站獲取此股票的財務報表。');
+                if (revenue && grossProfit && operatingIncome && netIncome && revenue !== 0) {
+                     const revenueInBillions = parseFloat((revenue / 100000).toFixed(2));
+                     const grossMargin = parseFloat(((grossProfit / revenue) * 100).toFixed(2));
+                     const operatingMargin = parseFloat(((operatingIncome / revenue) * 100).toFixed(2));
+                     const netMargin = parseFloat(((netIncome / revenue) * 100).toFixed(2));
+                     
+                     results.push({
+                        quarter: `${rocYear}Q${quarter}`,
+                        revenue: revenueInBillions,
+                        grossMargin: isNaN(grossMargin) ? 0 : grossMargin,
+                        operatingMargin: isNaN(operatingMargin) ? 0 : operatingMargin,
+                        netMargin: isNaN(netMargin) ? 0 : netMargin,
+                     });
+                }
+            }
+
+            // Decrement quarter for the next iteration.
+            quarter--;
+            if (quarter === 0) {
+                quarter = 4;
+                year--;
+            }
+        }
+
+        if (results.length === 0) {
+            throw new Error('無法從 MOPS 網站解析出有效的財務數據。');
+        }
+
+        return results.reverse(); // Sort from oldest to newest for charting.
+
+    } catch (error) {
+        console.error(`Failed to fetch financial data for ${code} from MOPS:`, error);
+        if (error instanceof Error) {
+             if(error.message.includes('fetch')) {
+                throw new Error('無法連接至公開資訊觀測站，請檢查網路連線。');
+            }
+            throw error;
+        }
+        throw new Error('無法從公開資訊觀測站獲取財務報表。');
     }
-    return finalResults;
 };

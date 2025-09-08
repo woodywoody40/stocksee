@@ -7,33 +7,69 @@ interface BarChartProps {
 }
 
 const BarChart: React.FC<BarChartProps> = ({ title, unit, data }) => {
+    if (!data || data.length === 0) {
+        return null;
+    }
+
     const values = data.map(d => d.value);
-    const maxVal = Math.max(...values, 0);
-    // Ensure we have a non-zero max for scaling, and add a little headroom
-    const scaleMax = maxVal === 0 ? 1 : maxVal * 1.2;
+    const minVal = Math.min(0, ...values);
+    const maxVal = Math.max(0, ...values);
+    const totalRange = maxVal - minVal;
+
+    // The position of the zero-axis, as a percentage from the bottom of the container.
+    const zeroPosition = totalRange > 0 ? (Math.abs(minVal) / totalRange) * 100 : 0;
 
     return (
-        <div className="bg-white/5 rounded-xl p-3">
-            <div className="flex justify-between items-baseline mb-3">
+        <div className="bg-white/5 rounded-xl p-3 flex flex-col h-48">
+            {/* Header */}
+            <div className="flex justify-between items-baseline mb-2">
                 <h5 className="text-sm font-semibold text-on-surface-dark">{title}</h5>
                 <span className="text-xs text-secondary-dark">{unit}</span>
             </div>
-            <div className="flex justify-around items-end h-32 space-x-2">
-                {data.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group">
-                         <div 
-                             className="relative w-full bg-brand-orange/40 rounded-t-sm transition-all duration-300 hover:bg-brand-orange/80 animate-slide-up-fade"
-                             style={{ 
-                                height: `${(Math.max(0, d.value) / scaleMax) * 100}%`,
-                                animationDelay: `${i * 50}ms`,
-                                animationFillMode: 'backwards'
-                             }}
-                         >
-                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs rounded py-0.5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                {d.value.toLocaleString()}{unit}
+
+            {/* Chart Area */}
+            <div className="relative flex-grow flex justify-around items-end space-x-2">
+                {/* Zero Line */}
+                {minVal < 0 && maxVal > 0 && (
+                    <div className="absolute w-full h-px bg-white/20" style={{ bottom: `${zeroPosition}%`, left: 0 }} />
+                )}
+
+                {/* Bars */}
+                {data.map((d, i) => {
+                    const isNegative = d.value < 0;
+                    const barHeightPercent = totalRange > 0 ? (Math.abs(d.value) / totalRange) * 100 : 0;
+
+                    const style: React.CSSProperties = {
+                        height: `${barHeightPercent}%`,
+                        bottom: isNegative ? `${zeroPosition - barHeightPercent}%` : `${zeroPosition}%`,
+                        animationDelay: `${i * 50}ms`,
+                        animationFillMode: 'backwards'
+                    };
+                    
+                    return (
+                        <div key={i} className="flex-1 relative group h-full"> 
+                            <div
+                                className={`absolute w-10/12 left-1/12 transition-all duration-300 group-hover:opacity-80 animate-slide-up-fade ${
+                                    isNegative 
+                                    ? 'bg-negative/80 rounded-b-sm'
+                                    : 'bg-brand-orange/80 rounded-t-sm'
+                                }`}
+                                style={style}
+                            >
+                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-black text-white text-xs rounded py-0.5 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                    {d.value.toLocaleString()}{unit}
+                                </div>
                             </div>
-                         </div>
-                         <span className="text-xs text-secondary-dark mt-1.5">{d.label.replace(/Q\d/, '')}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Labels */}
+            <div className="flex-shrink-0 flex justify-around pt-1.5 mt-1 border-t border-white/10">
+                {data.map((d, i) => (
+                    <div key={i} className="flex-1">
+                        <span className="text-xs text-secondary-dark text-center block">{d.label.substring(d.label.indexOf('Q'))}</span>
                     </div>
                 ))}
             </div>
