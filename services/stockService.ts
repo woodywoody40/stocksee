@@ -54,22 +54,32 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
         }
 
         const stocks: Stock[] = data.msgArray.map((item: TwseStock) => {
-            const price = parseFloat(item.z);
             const yesterdayPrice = parseFloat(item.y);
-            const change = price - yesterdayPrice;
-            const changePercent = yesterdayPrice !== 0 ? (change / yesterdayPrice) * 100 : 0;
+            
+            // The API returns '-' for untraded stocks (e.g., pre-market).
+            const hasTraded = item.z && item.z !== '-';
 
+            const price = hasTraded ? parseFloat(item.z) : yesterdayPrice;
+            const open = (item.o && item.o !== '-') ? parseFloat(item.o) : yesterdayPrice;
+            const high = (item.h && item.h !== '-') ? parseFloat(item.h) : yesterdayPrice;
+            const low = (item.l && item.l !== '-') ? parseFloat(item.l) : yesterdayPrice;
+            const volume = parseInt(item.v, 10) || 0;
+
+            const change = hasTraded ? price - yesterdayPrice : 0;
+            const changePercent = yesterdayPrice > 0 ? (change / yesterdayPrice) * 100 : 0;
+
+            // Final check for any potential NaN values to ensure data integrity
             return {
                 code: item.c,
                 name: item.n,
-                price: price,
-                change: parseFloat(change.toFixed(2)),
-                changePercent: parseFloat(changePercent.toFixed(2)),
-                open: parseFloat(item.o),
-                high: parseFloat(item.h),
-                low: parseFloat(item.l),
-                volume: parseInt(item.v, 10),
-                yesterdayPrice: yesterdayPrice,
+                price: isNaN(price) ? 0 : price,
+                change: isNaN(change) ? 0 : parseFloat(change.toFixed(2)),
+                changePercent: isNaN(changePercent) ? 0 : parseFloat(changePercent.toFixed(2)),
+                open: isNaN(open) ? 0 : open,
+                high: isNaN(high) ? 0 : high,
+                low: isNaN(low) ? 0 : low,
+                volume: isNaN(volume) ? 0 : volume,
+                yesterdayPrice: isNaN(yesterdayPrice) ? 0 : yesterdayPrice,
             };
         });
 

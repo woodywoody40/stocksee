@@ -1,11 +1,10 @@
 
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Stock, HistoricalDataPoint, FinancialAnalysis } from '../types';
-import { getAIFinancialAnalysis } from '../services/geminiService';
+import { Stock, HistoricalDataPoint } from '../types';
+import { getAIStockInsight } from '../services/geminiService';
 import { fetchHistoricalData } from '../services/stockService';
 import StockChart from './StockChart';
-import FinancialAnalysisView from './FinancialAnalysisView';
 
 interface StockModalProps {
     stock: Stock;
@@ -13,8 +12,6 @@ interface StockModalProps {
     onClose: () => void;
     onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
-
-type ModalTab = 'info' | 'financials';
 
 const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -60,17 +57,14 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
     const chartColor = isPositive ? '#ef4444' : '#22c55e';
     
+    const [aiInsight, setAiInsight] = useState<string | null>(null);
+    const [isInsightLoading, setIsInsightLoading] = useState(false);
+    const [insightError, setInsightError] = useState<string | null>(null);
     const [isClosing, setIsClosing] = useState(false);
     
     const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
     const [historyError, setHistoryError] = useState<string | null>(null);
-
-    const [activeTab, setActiveTab] = useState<ModalTab>('info');
-    const [financialAnalysis, setFinancialAnalysis] = useState<FinancialAnalysis | null>(null);
-    const [isFinancialsLoading, setIsFinancialsLoading] = useState(true);
-    const [financialsError, setFinancialsError] = useState<string | null>(null);
-
 
     const handleClose = useCallback(() => {
         if (isClosing) return;
@@ -121,44 +115,33 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
     }, [stock.code, stock.price]);
 
     useEffect(() => {
-        const fetchFinancials = async () => {
-             if (!apiKey) {
-                setFinancialsError("請設定 API 金鑰以啟用此功能。");
-                setIsFinancialsLoading(false);
+        const fetchInsight = async () => {
+            if (!apiKey) {
+                setInsightError("請先至「AI 新聞分析」頁面設定 API 金鑰。");
                 return;
             }
-            setIsFinancialsLoading(true);
-            setFinancialsError(null);
+            setIsInsightLoading(true);
+            setInsightError(null);
             try {
-                const analysis = await getAIFinancialAnalysis(apiKey, stock.name, stock.code);
-                setFinancialAnalysis(analysis);
+                const insight = await getAIStockInsight(apiKey, stock.name, stock.code);
+                setAiInsight(insight);
             } catch (err) {
                 if (err instanceof Error) {
-                    setFinancialsError(err.message);
+                    setInsightError(err.message);
                 } else {
-                    setFinancialsError("無法獲取財務分析資料。");
+                    setInsightError("無法生成 AI 洞察，請稍後再試。");
                 }
             } finally {
-                setIsFinancialsLoading(false);
+                setIsInsightLoading(false);
             }
         };
 
-        fetchFinancials();
+        fetchInsight();
     }, [stock, apiKey]);
     
     const handleDeepAnalysisClick = () => {
         onStartAnalysis(stock.name, stock.code);
-        handleClose();
     };
-
-    const TabButton: React.FC<{tab: ModalTab, label: string}> = ({tab, label}) => (
-        <button 
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-200 focus:outline-none ${activeTab === tab ? 'bg-surface-dark-alt text-on-surface-dark' : 'text-secondary-dark hover:bg-white/5'}`}
-        >
-            {label}
-        </button>
-    )
 
     return (
         <div 
@@ -170,21 +153,21 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-lg flex flex-col overflow-hidden backface-hidden dark max-h-[90vh] ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
+                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-md flex flex-col overflow-hidden backface-hidden dark max-h-[85vh] ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
                 style={{ transformStyle: 'preserve-3d' }}
                 onClick={(e) => e.stopPropagation()}
                 onAnimationEnd={handleAnimationEnd}
             >
-                {/* Header */}
-                 <div className="p-6 border-b border-outline-dark">
+                <div className="flex-grow overflow-y-auto modal-scrollbar p-6 space-y-6">
                     <div className="relative">
-                         <button 
+                        <button 
                             onClick={handleClose} 
                             className="absolute -top-2 -right-2 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
                             aria-label="關閉視窗"
                         >
                             <CloseIcon className="w-5 h-5" />
                         </button>
+
                         <div id="stock-modal-title" className="flex items-center gap-3 mb-4">
                             <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
                                {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : <ArrowDownIcon className="w-5 h-5 text-negative" /> }
@@ -194,7 +177,8 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                                 <p className="text-sm text-secondary-dark">{stock.code}</p>
                             </div>
                         </div>
-                         <div className="text-left">
+                        
+                        <div className="my-4 text-left">
                             <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
                             <div className={`text-base font-semibold ${priceColor} mt-1 flex items-center`}>
                                 <span>{isPositive ? '▲' : '▼'}</span>
@@ -202,54 +186,51 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                                 <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
                             </div>
                         </div>
-                    </div>
-                 </div>
-
-                {/* Tabs */}
-                <div className="flex-shrink-0 p-2 bg-black/20">
-                    <div className="flex items-center justify-center space-x-2">
-                        <TabButton tab="info" label="即時行情" />
-                        <TabButton tab="financials" label="財務簡析" />
-                    </div>
-                </div>
-
-                <div className="flex-grow overflow-y-auto modal-scrollbar">
-                    {activeTab === 'info' && (
-                        <div className="p-6 space-y-6">
-                            <div className="h-40 -mx-6">
-                                {isHistoryLoading ? (
-                                    <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
-                                ) : historyError ? (
-                                    <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
-                                ) : historicalData ? (
-                                    <StockChart priceData={historicalData} color={chartColor} />
-                                ) : null}
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
-                                <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
-                                <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
-                                <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
-                                <DetailItem label="成交量" value={`${Math.floor(stock.volume / 1000).toLocaleString()} 張`} />
-                            </div>
-                             <button
-                                onClick={handleDeepAnalysisClick}
-                                disabled={!apiKey}
-                                className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-not-allowed transform hover:scale-105"
-                            >
-                                <SparklesIcon className="w-5 h-5" />
-                                深入新聞分析
-                            </button>
+                        
+                        <div className="h-40 my-4 -mx-6">
+                            {isHistoryLoading ? (
+                                 <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
+                            ) : historyError ? (
+                                 <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
+                            ) : historicalData ? (
+                                 <StockChart priceData={historicalData} color={chartColor} />
+                            ) : null}
                         </div>
-                    )}
-                    {activeTab === 'financials' && (
-                        <FinancialAnalysisView 
-                            stockCode={stock.code}
-                            isLoading={isFinancialsLoading}
-                            error={financialsError}
-                            analysis={financialAnalysis}
-                        />
-                    )}
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
+                        <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
+                        <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
+                        <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
+                        <DetailItem label="成交量" value={`${Math.floor(stock.volume / 1000).toLocaleString()} 張`} />
+                    </div>
+                     
+                    <div className="relative p-4 rounded-xl border border-brand-orange/40 bg-gradient-to-br from-brand-orange/10 to-transparent">
+                       <div className="absolute -top-1 -right-1 text-brand-orange/20">
+                            <SparklesIcon className="w-16 h-16 transform rotate-12" />
+                       </div>
+                       <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-brand-orange font-semibold mb-2">
+                               <SparklesIcon className="w-5 h-5"/>
+                               <h4>AI 即時洞察</h4>
+                            </div>
+                             <div className="text-sm min-h-[50px]">
+                               {isInsightLoading ? <LoadingSpinner small /> :
+                               insightError ? <p className="text-positive/90">{insightError}</p> :
+                               aiInsight && <p className="text-secondary-dark leading-relaxed whitespace-pre-wrap">{aiInsight}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleDeepAnalysisClick}
+                        disabled={!apiKey}
+                        className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-not-allowed transform hover:scale-105"
+                    >
+                        <SparklesIcon className="w-5 h-5" />
+                        一鍵深度洞察
+                    </button>
                 </div>
             </div>
         </div>
