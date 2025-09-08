@@ -2,9 +2,10 @@ import React from 'react';
 
 interface SparklineProps {
     data: number[];
+    trend: 'positive' | 'negative' | 'neutral';
 }
 
-const Sparkline: React.FC<SparklineProps> = ({ data }) => {
+const Sparkline: React.FC<SparklineProps> = ({ data, trend }) => {
   // Ensure we have at least two points to draw a line
   if (!data || data.length < 2) {
     return (
@@ -14,11 +15,14 @@ const Sparkline: React.FC<SparklineProps> = ({ data }) => {
     );
   }
 
-  const isPositive = data[data.length - 1] >= data[0];
-  const color = isPositive ? 'rgba(239, 68, 68, 0.9)' : 'rgba(34, 197, 94, 0.9)'; // Red 500, Green 500
+  const color = trend === 'positive' 
+      ? 'rgb(var(--color-positive))'
+      : trend === 'negative'
+      ? 'rgb(var(--color-negative))'
+      : 'rgb(161 161 170)'; // Neutral (secondary-dark)
   
-  const gradientId = isPositive ? 'positive-spark-gradient' : 'negative-spark-gradient';
-  const gradientColor = isPositive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)';
+  const gradientId = `spark-gradient-${trend}`;
+  const gradientColor = color; // Use the same base color for the gradient
 
   // SVG dimensions
   const svgWidth = 80;
@@ -47,12 +51,12 @@ const Sparkline: React.FC<SparklineProps> = ({ data }) => {
     <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-full" preserveAspectRatio="none">
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: gradientColor, stopOpacity: 0.8 }} />
+          <stop offset="0%" style={{ stopColor: gradientColor, stopOpacity: 0.4 }} />
           <stop offset="100%" style={{ stopColor: gradientColor, stopOpacity: 0 }} />
         </linearGradient>
       </defs>
       <path d={areaPath} fill={`url(#${gradientId})`} />
-      <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 };

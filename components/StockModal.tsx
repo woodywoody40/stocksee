@@ -51,14 +51,18 @@ const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
     <div className="bg-white/5 rounded-xl p-3 text-center">
         <p className="text-sm text-secondary-dark mb-1">{label}</p>
-        <p className={`text-lg font-semibold text-on-surface-dark ${className}`}>{value}</p>
+        <p className={`text-lg font-semibold ${className}`}>{value}</p>
     </div>
 );
 
 const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name: string, code: string) => void }> = ({ stock, apiKey, onStartAnalysis }) => {
     const isPositive = stock.change > 0;
     const isNegative = stock.change < 0;
-    const chartColor = isPositive ? 'var(--color-positive)' : isNegative ? 'var(--color-negative)' : '#a1a1aa';
+    const chartColor = isPositive
+        ? 'rgb(var(--color-positive))'
+        : isNegative
+        ? 'rgb(var(--color-negative))'
+        : '#a1a1aa';
     
     const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
@@ -71,13 +75,18 @@ const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name:
             setHistoricalData(null);
             try {
                 const data = await fetchHistoricalData(stock.code);
-                const todayPoint: HistoricalDataPoint = {
-                    date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-                    close: stock.price,
-                };
-                
-                const combinedData = data ? [todayPoint, ...data.filter(d => d.date !== todayPoint.date)] : [todayPoint];
-                setHistoricalData(combinedData);
+                // Only add today's point if we have a valid date from the stock data
+                if (stock.date) {
+                    const todayPoint: HistoricalDataPoint = {
+                        date: stock.date,
+                        close: stock.price,
+                    };
+                    const combinedData = data ? [todayPoint, ...data.filter(d => d.date !== todayPoint.date)] : [todayPoint];
+                    setHistoricalData(combinedData);
+                } else {
+                    // If we don't have a date (e.g., API error), just show historical data
+                    setHistoricalData(data);
+                }
             } catch (err) {
                  if (err instanceof Error) {
                     setHistoryError(err.message);
@@ -89,7 +98,13 @@ const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name:
             }
         };
         loadHistoricalData();
-    }, [stock.code, stock.price]);
+    }, [stock.code, stock.price, stock.date]);
+
+    const getStatColor = (value: number) => {
+        if (value > stock.yesterdayPrice) return 'text-positive';
+        if (value < stock.yesterdayPrice) return 'text-negative';
+        return 'text-on-surface-dark';
+    };
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -103,11 +118,11 @@ const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name:
                 ) : null}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
-                <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
-                <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
-                <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
-                <DetailItem label="成交量" value={`${Math.floor(stock.volume).toLocaleString()}`} />
+                <DetailItem label="開盤價" value={stock.open.toFixed(2)} className={getStatColor(stock.open)} />
+                <DetailItem label="最高價" value={stock.high.toFixed(2)} className={getStatColor(stock.high)} />
+                <DetailItem label="最低價" value={stock.low.toFixed(2)} className={getStatColor(stock.low)} />
+                <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} className="text-on-surface-dark" />
+                <DetailItem label="成交量" value={`${Math.floor(stock.volume).toLocaleString()}`} className="text-on-surface-dark" />
             </div>
             <button
                 onClick={() => onStartAnalysis(stock.name, stock.code)}

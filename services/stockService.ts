@@ -78,11 +78,14 @@ export const fetchStockData = async (codes: string[], stockList: StockListItem[]
                 
                 const validOpen = isNaN(open) ? yesterdayPrice : open;
                 const stockInfo = stockMap.get(data.c);
+                const tradingDate = data.d; // e.g. "20240909"
+                const formattedDate = tradingDate ? `${tradingDate.substring(0, 4)}-${tradingDate.substring(4, 6)}-${tradingDate.substring(6, 8)}` : undefined;
 
                 return {
                     code: data.c,
                     name: stockInfo?.name || data.n,
                     market: stockInfo?.market, // Pass market type for financial data fetching
+                    date: formattedDate,
                     price: displayPrice,
                     change: parseFloat(change.toFixed(2)),
                     changePercent: parseFloat(changePercent.toFixed(2)),
@@ -189,13 +192,18 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
         const historicalPoints: HistoricalDataPoint[] = rawData
             .map(item => {
                 if (Array.isArray(item) && item.length > closePriceIndex) {
-                    const date = item[0]?.trim();
+                    const dateStr = item[0]?.trim();
                     const closePriceStr = item[closePriceIndex];
-                    if (date && typeof closePriceStr === 'string') {
-                         return {
-                            date: date,
-                            close: parseFloat(closePriceStr.trim().replace(/,/g, '')),
-                        };
+                    if (dateStr && typeof closePriceStr === 'string') {
+                         const rocParts = dateStr.split('/');
+                         if (rocParts.length === 3) {
+                            const year = parseInt(rocParts[0], 10) + 1911;
+                            const isoDate = `${year}-${rocParts[1].padStart(2, '0')}-${rocParts[2].padStart(2, '0')}`;
+                            return {
+                                date: isoDate,
+                                close: parseFloat(closePriceStr.trim().replace(/,/g, '')),
+                            };
+                         }
                     }
                 }
                 return null;
@@ -209,12 +217,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
         // De-duplicate and sort the data.
         const uniquePoints = Array.from(new Map(historicalPoints.map(p => [p.date, p])).values());
         
-        uniquePoints.sort((a, b) => {
-            // Dates are in ROC format (e.g., "113/05/22").
-            const dateA = new Date(a.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
-            const dateB = new Date(b.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
-            return dateB.getTime() - dateA.getTime();
-        });
+        uniquePoints.sort((a, b) => b.date.localeCompare(a.date));
 
         // Return the most recent 30 trading days.
         return uniquePoints.slice(0, 30);

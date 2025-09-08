@@ -77,7 +77,9 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
         tooltipCircleRef.current.setAttribute('cx', `${point.x}`);
         tooltipCircleRef.current.setAttribute('cy', `${point.y}`);
 
-        tooltipTextRef.current.innerHTML = `<div class="text-xs text-secondary-dark text-center">${point.data.date}</div><div class="font-bold text-center text-on-surface-dark">${point.data.close.toFixed(2)}</div>`;
+        const dateParts = point.data.date.split('-');
+        const displayDate = dateParts.length > 2 ? `${dateParts[1]}/${dateParts[2]}` : point.data.date;
+        tooltipTextRef.current.innerHTML = `<div class="text-xs text-secondary-dark text-center">${displayDate}</div><div class="font-bold text-center text-on-surface-dark">${point.data.close.toFixed(2)}</div>`;
         
         const onScreenX = (point.x / svgWidth) * svgRect.width;
         const tooltipWidth = tooltipTextRef.current.offsetWidth;

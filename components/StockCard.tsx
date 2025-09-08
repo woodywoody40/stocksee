@@ -16,8 +16,10 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement> & { isFilled: boolean }> 
 );
 
 const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchlist, onCardClick }) => {
-    const changeIsPositive = stock.change > 0;
-    const changeIsNegative = stock.change < 0;
+    // Use the rounded value for color logic to match the displayed text and avoid floating point issues.
+    const roundedChange = parseFloat(stock.change.toFixed(2));
+    const changeIsPositive = roundedChange > 0;
+    const changeIsNegative = roundedChange < 0;
 
     const priceColor = changeIsPositive
         ? 'text-positive'
@@ -32,6 +34,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
         : '';
     
     const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
+    const trend = changeIsPositive ? 'positive' : changeIsNegative ? 'negative' : 'neutral';
 
     const handleStarClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -68,7 +71,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
                         </div>
                     </div>
                     <div className="w-2/5 h-10">
-                        <Sparkline data={priceData} />
+                        <Sparkline data={priceData} trend={trend} />
                     </div>
                 </div>
             </div>
