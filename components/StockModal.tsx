@@ -42,9 +42,9 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
     <div className={`flex justify-center items-center space-x-2 ${small ? '' : 'p-4'}`}>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
-        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
@@ -189,15 +189,15 @@ const FinancialsTab: React.FC<{ stock: Stock, apiKey: string }> = ({ stock, apiK
     return (
         <div className="space-y-6 animate-fade-in">
             <div>
-                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 text-brand-orange">
+                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 text-primary">
                     <SparklesIcon className="w-5 h-5" /> AI 財務總評
                 </h4>
-                <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-xl p-4 text-sm text-on-surface-dark/90 leading-relaxed">
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 text-sm text-on-surface-dark/90 leading-relaxed">
                    {isAiLoading && (
                         <div className="space-y-2">
-                           <div className="h-3 bg-brand-orange/30 rounded w-full animate-pulse"></div>
-                           <div className="h-3 bg-brand-orange/30 rounded w-5/6 animate-pulse"></div>
-                           <div className="h-3 bg-brand-orange/30 rounded w-3/4 animate-pulse"></div>
+                           <div className="h-3 bg-primary/30 rounded w-full animate-pulse"></div>
+                           <div className="h-3 bg-primary/30 rounded w-5/6 animate-pulse"></div>
+                           <div className="h-3 bg-primary/30 rounded w-3/4 animate-pulse"></div>
                         </div>
                    )}
                    {aiError && <p className="text-positive/90">{aiError}</p>}
@@ -274,7 +274,7 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 <div className="flex-shrink-0 p-6 pb-0">
                      <button 
                         onClick={handleClose} 
-                        className="absolute top-4 right-4 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
+                        className="absolute top-4 right-4 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary z-20"
                         aria-label="關閉視窗"
                     >
                         <CloseIcon className="w-5 h-5" />

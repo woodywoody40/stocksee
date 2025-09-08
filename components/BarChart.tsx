@@ -52,7 +52,7 @@ const BarChart: React.FC<BarChartProps> = ({ title, unit, data }) => {
                                 className={`absolute w-10/12 left-1/12 transition-all duration-300 group-hover:opacity-80 animate-slide-up-fade ${
                                     isNegative 
                                     ? 'bg-negative/80 rounded-b-sm'
-                                    : 'bg-brand-orange/80 rounded-t-sm'
+                                    : 'bg-primary/80 rounded-t-sm'
                                 }`}
                                 style={style}
                             >

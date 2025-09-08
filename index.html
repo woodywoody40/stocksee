@@ -17,9 +17,9 @@
         --color-background-dark: #111113;
         --color-surface-dark: #1c1c1e;
         --color-outline-dark: rgba(255, 255, 255, 0.1);
-        --color-positive: #ef4444; /* Red */
-        --color-negative: #22c55e; /* Green */
-        --color-primary: #ea580c; /* Orange */
+        --color-positive: 239 68 68; /* Red */
+        --color-negative: 34 197 94; /* Green */
+        --color-primary: 234 88 12; /* Orange */
       }
 
       body {
@@ -40,7 +40,7 @@
         height: 100%;
         z-index: -1;
         opacity: 0.15;
-        background: conic-gradient(from 90deg at 50% 50%, #111113, #ea580c, #111113, #22c55e, #111113);
+        background: conic-gradient(from 90deg at 50% 50%, #111113, rgb(var(--color-primary)), #111113, rgb(var(--color-negative)), #111113);
         animation: rotate-gradient 30s linear infinite;
       }
 
@@ -74,7 +74,7 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              primary: '#ea580c', // Brand Orange
+              primary: 'rgb(var(--color-primary) / <alpha-value>)', // Brand Orange
 
               background: {
                 light: '#f4f4f5', // Lighter Grey
@@ -107,10 +107,9 @@
                 dark: '#52525b',
               },
 
-              positive: 'var(--color-positive)', // Red
-              negative: 'var(--color-negative)', // Green
+              positive: 'rgb(var(--color-positive) / <alpha-value>)', // Red
+              negative: 'rgb(var(--color-negative) / <alpha-value>)', // Green
               'brand-gold': '#f59e0b',
-              'brand-orange': 'var(--color-primary)',
               'surface-dark-alt': '#27272a', // Slightly lighter dark for buttons/cards
             },
             borderRadius: {
@@ -119,9 +118,9 @@
               '3xl': '1.5rem',
             },
             boxShadow: {
-              'glow-orange': '0 0 12px rgba(234, 88, 12, 0.4), 0 0 20px rgba(234, 88, 12, 0.2)',
-              'glow-positive': '0 0 12px rgba(239, 68, 68, 0.4), 0 0 20px rgba(239, 68, 68, 0.2)',
-              'glow-negative': '0 0 12px rgba(34, 197, 94, 0.4), 0 0 20px rgba(34, 197, 94, 0.2)',
+              'glow-orange': '0 0 12px rgba(var(--color-primary), 0.4), 0 0 20px rgba(var(--color-primary), 0.2)',
+              'glow-positive': '0 0 12px rgba(var(--color-positive), 0.4), 0 0 20px rgba(var(--color-positive), 0.2)',
+              'glow-negative': '0 0 12px rgba(var(--color-negative), 0.4), 0 0 20px rgba(var(--color-negative), 0.2)',
             },
             keyframes: {
               'fade-in': {
