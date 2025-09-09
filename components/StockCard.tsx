@@ -5,6 +5,7 @@ import Sparkline from './Sparkline';
 interface StockCardProps {
     stock: Stock;
     isWatched: boolean;
+    intradayData?: number[];
     onToggleWatchlist: (code: string) => void;
     onCardClick: (stock: Stock) => void;
 }
@@ -15,7 +16,7 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement> & { isFilled: boolean }> 
     </svg>
 );
 
-const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchlist, onCardClick }) => {
+const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, intradayData, onToggleWatchlist, onCardClick }) => {
     // Use the rounded value for color logic to match the displayed text and avoid floating point issues.
     const roundedChange = parseFloat(stock.change.toFixed(2));
     const changeIsPositive = roundedChange > 0;
@@ -33,7 +34,6 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
         ? 'shadow-glow-negative'
         : '';
     
-    const priceData = [stock.open, stock.low, stock.high, stock.price].filter(p => p > 0);
     const trend = changeIsPositive ? 'positive' : changeIsNegative ? 'negative' : 'neutral';
 
     const handleStarClick = (e: React.MouseEvent) => {
@@ -50,12 +50,12 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
             <div className="relative z-10">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="font-bold text-lg text-on-surface-light dark:text-on-surface-dark">{stock.name}</h3>
+                        <h3 className="font-bold text-lg text-on-surface-light dark:text-on-surface-dark truncate" title={stock.name}>{stock.name}</h3>
                         <p className="text-sm text-secondary-light dark:text-secondary-dark">{stock.code}</p>
                     </div>
                     <button 
                         onClick={handleStarClick}
-                        className="text-secondary-light dark:text-secondary-dark hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
+                        className="text-secondary-light dark:text-secondary-dark hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20 flex-shrink-0"
                         aria-label={isWatched ? '從關注列表移除' : '加入關注列表'}
                     >
                         <StarIcon isFilled={isWatched} className={`w-6 h-6 ${isWatched ? 'text-brand-gold' : ''}`} />
@@ -71,7 +71,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
                         </div>
                     </div>
                     <div className="w-2/5 h-10">
-                        <Sparkline data={priceData} trend={trend} />
+                        <Sparkline data={intradayData} trend={trend} />
                     </div>
                 </div>
             </div>

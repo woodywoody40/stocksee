@@ -112,6 +112,99 @@ export const fetchStockData = async (codes: string[], stockList: StockListItem[]
     }
 };
 
+/**
+ * Fetches intraday (5-minute interval) stock data from Yahoo Finance for sparkline charts.
+ * @param code - The stock code.
+ * @returns A promise that resolves to an array of numbers (prices) or null if failed.
+ */
+export const fetchIntradayData = async (code: string): Promise<number[] | null> => {
+    try {
+        const market = parseInt(code, 10) >= 3000 && parseInt(code, 10) < 9000 && code.length === 4 ? 'TWO' : 'TW';
+        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.${market}?region=US&lang=en-US&includePrePost=false&interval=5m&useYfid=true&range=1d`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooApiUrl)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) return null;
+        
+        const data = await response.json();
+        const result = data?.chart?.result?.[0];
+
+        if (result && result.indicators?.quote?.[0]?.close) {
+            // Filter out any null values which can occur during market breaks.
+            return result.indicators.quote[0].close.filter((p: number | null) => p !== null);
+        }
+        return null;
+    } catch (error) {
+        console.error(`Failed to fetch intraday chart data for ${code}:`, error);
+        return null;
+    }
+};
+
+/**
+ * Fetches detailed chart data from Yahoo Finance for modal charts.
+ * @param code - The stock code.
+ * @param range - The time range ('intraday', 'daily', 'weekly', 'monthly').
+ * @returns A promise that resolves to an array of HistoricalDataPoint objects.
+ */
+export const fetchChartData = async (code: string, range: 'intraday' | 'daily' | 'weekly' | 'monthly'): Promise<HistoricalDataPoint[]> => {
+    let apiRange: string;
+    let apiInterval: string;
+
+    switch (range) {
+        case 'daily':
+            apiRange = '1y';
+            apiInterval = '1d';
+            break;
+        case 'weekly':
+            apiRange = '5y';
+            apiInterval = '1wk';
+            break;
+        case 'monthly':
+            apiRange = 'max';
+            apiInterval = '1mo';
+            break;
+        case 'intraday':
+        default:
+            apiRange = '1d';
+            apiInterval = '5m';
+            break;
+    }
+
+    try {
+        const market = parseInt(code, 10) >= 3000 && parseInt(code, 10) < 9000 && code.length === 4 ? 'TWO' : 'TW';
+        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.${market}?region=US&lang=en-US&includePrePost=false&interval=${apiInterval}&useYfid=true&range=${apiRange}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooApiUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+            throw new Error(`Yahoo API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        const result = data?.chart?.result?.[0];
+
+        if (result && result.timestamp && result.indicators?.quote?.[0]?.close) {
+            const points: HistoricalDataPoint[] = result.timestamp
+                .map((ts: number, index: number) => ({
+                    date: String(ts), // Store Unix timestamp (in seconds) as a string
+                    close: result.indicators.quote[0].close[index],
+                }))
+                .filter((p: any) => p.close !== null);
+            
+            if (points.length < 2) {
+                 throw new Error('API 回傳的數據點不足以繪製圖表。');
+            }
+
+            return points;
+        }
+        
+        throw new Error('從 API 回應中找不到有效的圖表數據。');
+    } catch (error) {
+        console.error(`Failed to fetch chart data for ${code} with range ${range}:`, error);
+        if (error instanceof Error) throw error;
+        throw new Error("無法獲取走勢資料。");
+    }
+};
+
 
 /**
  * Fetches historical daily stock data for the last ~30 days for technical analysis.

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SparklineProps {
-    data: number[];
+    data?: number[];
     trend: 'positive' | 'negative' | 'neutral';
 }
 
@@ -10,7 +10,7 @@ const Sparkline: React.FC<SparklineProps> = ({ data, trend }) => {
   if (!data || data.length < 2) {
     return (
         <div className="flex items-center justify-center w-full h-full">
-            <p className="text-xs text-text-tertiary">N/A</p>
+            <p className="text-xs text-tertiary-dark">N/A</p>
         </div>
     );
   }
@@ -25,8 +25,8 @@ const Sparkline: React.FC<SparklineProps> = ({ data, trend }) => {
   const gradientColor = color; // Use the same base color for the gradient
 
   // SVG dimensions
-  const svgWidth = 80;
-  const svgHeight = 50;
+  const svgWidth = 100;
+  const svgHeight = 40;
   const paddingY = 5;
   const chartHeight = svgHeight - paddingY * 2;
 
@@ -41,10 +41,10 @@ const Sparkline: React.FC<SparklineProps> = ({ data, trend }) => {
     const y = valueRange === 0 
       ? svgHeight / 2 
       : (svgHeight - paddingY) - ((d - minVal) / valueRange) * chartHeight;
-    return `${x},${y}`;
-  });
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ');
 
-  const path = `M ${points.join(' L ')}`;
+  const path = `M ${points}`;
   const areaPath = `${path} L ${svgWidth},${svgHeight} L 0,${svgHeight} Z`;
 
   return (
@@ -56,7 +56,7 @@ const Sparkline: React.FC<SparklineProps> = ({ data, trend }) => {
         </linearGradient>
       </defs>
       <path d={areaPath} fill={`url(#${gradientId})`} />
-      <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 };

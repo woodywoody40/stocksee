@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Stock, HistoricalDataPoint, FinancialDataPoint } from '../types';
-import { fetchHistoricalData, fetchFinancialData } from '../services/stockService';
+import { fetchChartData, fetchFinancialData } from '../services/stockService';
 import { getAIFinancialAnalysis } from '../services/geminiService';
 import StockChart from './StockChart';
 import BarChart from './BarChart';
@@ -15,6 +15,7 @@ interface StockModalProps {
 }
 
 type ModalTab = 'quote' | 'financials';
+type ChartRange = 'intraday' | 'daily' | 'weekly' | 'monthly';
 
 const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -64,41 +65,31 @@ const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name:
         ? 'rgb(var(--color-negative))'
         : '#a1a1aa';
     
-    const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
-    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-    const [historyError, setHistoryError] = useState<string | null>(null);
+    const [chartData, setChartData] = useState<HistoricalDataPoint[] | null>(null);
+    const [isChartLoading, setIsChartLoading] = useState(true);
+    const [chartError, setChartError] = useState<string | null>(null);
+    const [chartRange, setChartRange] = useState<ChartRange>('intraday');
 
     useEffect(() => {
-        const loadHistoricalData = async () => {
-            setIsHistoryLoading(true);
-            setHistoryError(null);
-            setHistoricalData(null);
+        const loadChartData = async () => {
+            setIsChartLoading(true);
+            setChartError(null);
+            setChartData(null);
             try {
-                const data = await fetchHistoricalData(stock.code);
-                // Only add today's point if we have a valid date from the stock data
-                if (stock.date) {
-                    const todayPoint: HistoricalDataPoint = {
-                        date: stock.date,
-                        close: stock.price,
-                    };
-                    const combinedData = data ? [todayPoint, ...data.filter(d => d.date !== todayPoint.date)] : [todayPoint];
-                    setHistoricalData(combinedData);
-                } else {
-                    // If we don't have a date (e.g., API error), just show historical data
-                    setHistoricalData(data);
-                }
+                const data = await fetchChartData(stock.code, chartRange);
+                setChartData(data);
             } catch (err) {
                  if (err instanceof Error) {
-                    setHistoryError(err.message);
+                    setChartError(err.message);
                 } else {
-                    setHistoryError('獲取歷史資料時發生未知錯誤。');
+                    setChartError('獲取走勢資料時發生未知錯誤。');
                 }
             } finally {
-                setIsHistoryLoading(false);
+                setIsChartLoading(false);
             }
         };
-        loadHistoricalData();
-    }, [stock.code, stock.price, stock.date]);
+        loadChartData();
+    }, [stock.code, chartRange]);
 
     const getStatColor = (value: number) => {
         if (value > stock.yesterdayPrice) return 'text-positive';
@@ -106,15 +97,31 @@ const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name:
         return 'text-on-surface-dark';
     };
 
+    const getRangeButtonClass = (range: ChartRange) => 
+        `flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/80 ${
+            chartRange === range
+                ? 'bg-primary/20 text-primary'
+                : 'text-secondary-dark hover:bg-white/5'
+        }`;
+    
+    const rangeLabels: Record<ChartRange, string> = { 'intraday': '即時行情', 'daily': '日線', 'weekly': '周線', 'monthly': '月線' };
+
     return (
         <div className="space-y-6 animate-fade-in">
+            <div className="flex justify-center items-center bg-black/20 p-1 rounded-lg w-full mx-auto">
+                {(['intraday', 'daily', 'weekly', 'monthly'] as const).map(range => (
+                    <button key={range} onClick={() => setChartRange(range)} className={getRangeButtonClass(range)}>
+                        {rangeLabels[range]}
+                    </button>
+                ))}
+            </div>
             <div className="h-40 -mx-6 bg-black/10 rounded-lg">
-                {isHistoryLoading ? (
+                {isChartLoading ? (
                         <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
-                ) : historyError ? (
-                        <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
-                ) : historicalData ? (
-                        <StockChart priceData={historicalData} color={chartColor} />
+                ) : chartError ? (
+                        <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{chartError}</p></div>
+                ) : chartData ? (
+                        <StockChart priceData={chartData} color={chartColor} range={chartRange} />
                 ) : null}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

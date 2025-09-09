@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { fetchStockData } from '../services/stockService';
+import { fetchStockData, fetchIntradayData } from '../services/stockService';
 import { getFullStockList } from '../services/stockListService';
 import { Stock, StockListItem } from '../types';
 import { DEFAULT_STOCKS, REFRESH_INTERVAL } from '../constants';
@@ -35,13 +35,14 @@ interface MarketViewProps {
 
 const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
+    const [intradayDataMap, setIntradayDataMap] = useState<Map<string, number[]>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [watchlist, setWatchlist] = useLocalStorage<string[]>('watchlist', []);
     const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
     const [searchCodes, setSearchCodes] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [fullStockList, setFullStockList] = useState<StockListItem[]>(TW_STOCKS);
+    const [fullStockList, setFullStockList] = useState<StockListItem[]>([]);
 
 
     useEffect(() => {
@@ -51,6 +52,8 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 setFullStockList(list);
             } catch (error) {
                 console.warn("Could not load full stock list, search may be incomplete.", error);
+                // Fallback to static list if service fails
+                setFullStockList(TW_STOCKS as StockListItem[]);
             }
         };
         loadFullList();
@@ -61,6 +64,57 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         return Array.from(combined);
     }, [watchlist, searchCodes]);
 
+    const fetchData = useCallback(async (signal: AbortSignal, codes: string[], currentStockData: Stock[]) => {
+        if (codes.length === 0) {
+            setStocks([]);
+            setIntradayDataMap(new Map());
+            return [];
+        }
+
+        const data = await fetchStockData(codes, fullStockList);
+        if (signal.aborted) return currentStockData;
+
+        // Fetch intraday data in parallel for the new stock data
+        const intradayPromises = data.map(stock => fetchIntradayData(stock.code));
+        const intradayResults = await Promise.all(intradayPromises);
+        
+        if (signal.aborted) return currentStockData;
+        
+        const newIntradayMap = new Map<string, number[]>();
+        intradayResults.forEach((chartData, index) => {
+            const stockCode = data[index]?.code;
+            if (stockCode && chartData) {
+                newIntradayMap.set(stockCode, chartData);
+            }
+        });
+
+        setIntradayDataMap(prevMap => {
+            const mergedMap = new Map(prevMap);
+            newIntradayMap.forEach((value, key) => mergedMap.set(key, value));
+            return mergedMap;
+        });
+
+        // Smartly merge new data with existing data to prevent glitches
+        const sortedData = data.sort((a, b) => codes.indexOf(a.code) - codes.indexOf(b.code));
+        const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
+        const allCodes = Array.from(new Set([...currentStockData.map(s => s.code), ...sortedData.map(s => s.code)]));
+
+        return allCodes.map(code => {
+            const currentStock = currentStockData.find(s => s.code === code);
+            const newStock = newStocksMap.get(code);
+
+            if (!newStock) return currentStock;
+            if (!currentStock) return newStock;
+
+            const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
+            const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
+
+            return (currentHasTraded && newIsPreMarket) ? currentStock : newStock;
+        }).filter((s): s is Stock => s !== undefined);
+
+    }, [fullStockList]);
+
+
     // Effect for user-driven data fetching (initial load, search, watchlist changes)
     useEffect(() => {
         const controller = new AbortController();
@@ -68,44 +122,10 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             setIsLoading(true);
             setError(null);
 
-            if (codesToFetch.length === 0) {
-                setStocks([]);
-                setIsLoading(false);
-                return;
-            }
-
             try {
-                const data = await fetchStockData(codesToFetch, fullStockList);
+                const updatedStocks = await fetchData(controller.signal, codesToFetch, stocks);
                 if (!controller.signal.aborted) {
-                    const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
-                    
-                    // Apply the same protective heuristic as the background refresh to prevent overwrites.
-                    setStocks(currentStocks => {
-                        // On initial load, there's no existing data to protect, so accept the fetched data.
-                        if (currentStocks.length === 0) {
-                            return sortedData;
-                        }
-
-                        const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-                        const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
-
-                        return allCodes.map(code => {
-                            const currentStock = currentStocks.find(s => s.code === code);
-                            const newStock = newStocksMap.get(code);
-
-                            if (!newStock) return currentStock;
-                            if (!currentStock) return newStock;
-
-                            const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
-                            const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
-
-                            if (currentHasTraded && newIsPreMarket) {
-                                return currentStock; // An API glitch likely occurred; keep the last known good price.
-                            }
-                            
-                            return newStock;
-                        }).filter((s): s is Stock => s !== undefined);
-                    });
+                    setStocks(updatedStocks);
                 }
             } catch (err) {
                  if (!controller.signal.aborted) {
@@ -119,51 +139,30 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             }
         };
 
-        loadData();
+        if(fullStockList.length > 0) {
+           loadData();
+        }
 
         return () => {
             controller.abort();
         };
-    }, [codesToFetch, fullStockList]);
+    }, [codesToFetch, fullStockList, fetchData]);
 
     // Effect for background refresh interval
     useEffect(() => {
         const intervalId = setInterval(async () => {
-            if (codesToFetch.length === 0 || document.hidden) return;
+            if (codesToFetch.length === 0 || document.hidden || fullStockList.length === 0) return;
             try {
-                const data = await fetchStockData(codesToFetch, fullStockList);
-                const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
-                
-                setStocks(currentStocks => {
-                    const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-                    const allCodes = Array.from(new Set([...currentStocks.map(s => s.code), ...sortedData.map(s => s.code)]));
-
-                    return allCodes.map(code => {
-                        const currentStock = currentStocks.find(s => s.code === code);
-                        const newStock = newStocksMap.get(code);
-
-                        if (!newStock) return currentStock; // Keep old data if new is missing
-                        if (!currentStock) return newStock; // Add new stock if it's not currently tracked
-
-                        // Heuristic to detect if the API flaked and returned pre-market data mid-day.
-                        // If we already have a valid traded price, we should not revert to yesterday's closing price.
-                        const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
-                        const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
-
-                        if (currentHasTraded && newIsPreMarket) {
-                            return currentStock; // An API glitch likely occurred; keep the last known good price.
-                        }
-                        
-                        return newStock; // Otherwise, update with the latest data from the API.
-                    }).filter((s): s is Stock => s !== undefined);
-                });
+                const controller = new AbortController(); // No real abort, just for function signature
+                const updatedStocks = await fetchData(controller.signal, codesToFetch, stocks);
+                setStocks(updatedStocks);
             } catch (err) {
                 console.error("Background refresh failed:", err);
             }
         }, REFRESH_INTERVAL);
 
         return () => clearInterval(intervalId);
-    }, [codesToFetch, fullStockList]);
+    }, [codesToFetch, fullStockList, stocks, fetchData]);
 
 
     const toggleWatchlist = useCallback((code: string) => {
@@ -213,6 +212,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 <div key={stock.code} className="animate-stagger-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                     <StockCard
                         stock={stock}
+                        intradayData={intradayDataMap.get(stock.code)}
                         isWatched={watchlist.includes(stock.code)}
                         onToggleWatchlist={toggleWatchlist}
                         onCardClick={setSelectedStock}
@@ -227,7 +227,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             <SearchBar stockList={fullStockList} onSearch={handleSearch} />
             {error && <p className="text-center text-positive bg-positive/20 p-3 rounded-lg">{error}</p>}
             
-            {isLoading ? (
+            {(isLoading && stocks.length === 0) ? (
                 <LoadingSpinner />
             ) : (
                 <>
