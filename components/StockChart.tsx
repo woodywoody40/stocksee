@@ -1,14 +1,12 @@
 import React, { useRef, useMemo, useCallback } from 'react';
 import { HistoricalDataPoint } from '../types';
 
-type ChartRange = 'intraday' | 'daily' | 'weekly' | 'monthly';
 interface StockChartProps {
     priceData: HistoricalDataPoint[];
     color?: string;
-    range: ChartRange;
 }
 
-const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
+const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const tooltipGroupRef = useRef<SVGGElement>(null);
     const tooltipLineRef = useRef<SVGLineElement>(null);
@@ -18,15 +16,14 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
     if (!priceData || priceData.length < 2) {
         return (
             <div className="flex items-center justify-center w-full h-full">
-                <p className="text-xs text-secondary-dark">圖表資料不足</p>
+                <p className="text-xs text-secondary-dark">歷史資料不足</p>
             </div>
         );
     }
   
-    const sortedData = priceData; // Data from service is already sorted chronologically.
-
-    const priceColor = color || (sortedData[sortedData.length - 1].close >= sortedData[0].close ? '#ef4444' : '#22c55e');
-    const gradientColor = color ? color.replace(')', ', 0.2)').replace('rgb', 'rgba') : (sortedData[sortedData.length - 1].close >= sortedData[0].close ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)');
+    const reversedData = useMemo(() => [...priceData].reverse(), [priceData]);
+    const priceColor = color || (reversedData[reversedData.length - 1].close >= reversedData[0].close ? '#ef4444' : '#22c55e');
+    const gradientColor = color ? color.replace(')', ', 0.2)').replace('rgb', 'rgba') : (reversedData[reversedData.length - 1].close >= reversedData[0].close ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)');
     const gradientId = `chart-gradient-${priceColor.replace(/[^a-zA-Z0-9]/g, '')}`;
 
     const svgWidth = 300;
@@ -34,7 +31,7 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
     const paddingY = 5;
     const chartHeight = svgHeight - paddingY * 2;
 
-    const allValues = useMemo(() => sortedData.map(p => p.close), [sortedData]);
+    const allValues = useMemo(() => reversedData.map(p => p.close), [reversedData]);
     const maxVal = useMemo(() => Math.max(...allValues), [allValues]);
     const minVal = useMemo(() => Math.min(...allValues), [allValues]);
     const valueRange = maxVal - minVal;
@@ -44,14 +41,14 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
         return (svgHeight - paddingY) - ((value - minVal) / valueRange) * chartHeight;
     }, [valueRange, svgHeight, chartHeight, paddingY, minVal]);
 
-    const dataLength = sortedData.length;
+    const dataLength = reversedData.length;
     const xStep = svgWidth / (dataLength > 1 ? dataLength - 1 : 1);
 
-    const points = useMemo(() => sortedData.map((d, i) => ({
+    const points = useMemo(() => reversedData.map((d, i) => ({
         x: i * xStep,
         y: scaleY(d.close),
         data: d,
-    })), [sortedData, xStep, scaleY]);
+    })), [reversedData, xStep, scaleY]);
 
     const pricePath = useMemo(() => {
         if (points.length === 0) return '';
@@ -80,43 +77,17 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
         tooltipCircleRef.current.setAttribute('cx', `${point.x}`);
         tooltipCircleRef.current.setAttribute('cy', `${point.y}`);
 
-        const dateStr = point.data.date;
-        const date = new Date(parseInt(dateStr, 10) * 1000);
-        let displayDate: string;
-
-        switch (range) {
-            case 'daily':
-            case 'weekly':
-                displayDate = date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                break;
-            case 'monthly':
-                displayDate = date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit' });
-                break;
-            case 'intraday':
-            default:
-                displayDate = date.toLocaleTimeString('zh-TW', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-                break;
-        }
-
-        tooltipTextRef.current.innerHTML = `<div class="text-xs text-secondary-dark text-center">${displayDate}</div><div class="font-bold text-center text-on-surface-dark">${point.data.close.toFixed(2)}</div>`;
+        tooltipTextRef.current.innerHTML = `<div class="text-center">${point.data.date}</div><div class="font-bold text-center">${point.data.close.toFixed(2)}</div>`;
         
         const onScreenX = (point.x / svgWidth) * svgRect.width;
         const tooltipWidth = tooltipTextRef.current.offsetWidth;
-        const tooltipHeight = tooltipTextRef.current.offsetHeight;
+        let textX = onScreenX + 15; // Position to the right by default
+        if (tooltipWidth > 0 && textX + tooltipWidth > svgRect.width - 5) {
+            textX = onScreenX - tooltipWidth - 15; // Flip to the left
+        }
+        tooltipTextRef.current.style.transform = `translateX(${textX}px)`;
 
-        let textX = onScreenX - (tooltipWidth / 2);
-        
-        // Keep tooltip within horizontal bounds
-        if (textX < 5) textX = 5;
-        if (textX + tooltipWidth > svgRect.width - 5) textX = svgRect.width - tooltipWidth - 5;
-        
-        tooltipTextRef.current.style.transform = `translateX(${textX}px) translateY(${svgRect.top - tooltipHeight - 10}px)`;
-
-    }, [points, xStep, svgWidth, range]);
+    }, [points, xStep, svgWidth]);
 
     const handleInteractionEnd = useCallback(() => {
         if (tooltipGroupRef.current && tooltipTextRef.current) {
@@ -189,10 +160,17 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color, range }) => {
                 </g>
             </svg>
             
+            <div className="absolute top-0 right-0 flex items-center text-xs p-1 space-x-2 bg-surface-dark/50 rounded-bl-md">
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-0.5" style={{ backgroundColor: priceColor }}></div>
+                    <span className="text-secondary-dark font-mono">股價</span>
+                </div>
+            </div>
+            
             <div
                 ref={tooltipTextRef}
-                className="fixed top-0 left-0 bg-surface-dark/90 backdrop-blur-sm border border-outline-dark text-white text-xs rounded-md p-2 pointer-events-none z-50 shadow-lg"
-                style={{ opacity: 0, transition: 'opacity 0.1s ease' }}
+                className="absolute top-2 bg-black/70 text-white text-xs rounded-md p-2 pointer-events-none z-10"
+                style={{ opacity: 0, transition: 'opacity 0.1s ease, transform 0.1s ease' }}
             >
                 {/* Content is set via innerHTML */}
             </div>

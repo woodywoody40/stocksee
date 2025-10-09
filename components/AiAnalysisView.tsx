@@ -17,12 +17,12 @@ const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 
 const icons = {
-  Positive: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  Negative: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-negative" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  Neutral: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-secondary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10H10M14 14H10M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  Up: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>,
-  Down: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-negative" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>,
-  Unchanged: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-secondary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" /></svg>,
+  Positive: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Negative: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-negative" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Neutral: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-secondary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10H10M14 14H10M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Up: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>,
+  Down: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-negative" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>,
+  Unchanged: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-secondary-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" /></svg>,
 };
 
 interface AiAnalysisViewProps {
@@ -35,28 +35,25 @@ interface AiAnalysisViewProps {
 
 const AnalysisSkeleton: React.FC = () => (
     <div className="mt-8">
-        <div className="flex items-center gap-3 mb-4">
-            <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-            <h3 className="text-xl font-bold">AI 分析中...</h3>
-        </div>
+        <h3 className="text-xl font-bold mb-4 text-primary pl-3 border-l-4 border-primary">AI 分析中...</h3>
         <div className="space-y-6">
-            <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
+            <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-3 animate-pulse"></div>
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mt-2 animate-pulse"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
+                <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4 animate-pulse"></div>
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
                     </div>
                 </div>
-                <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
+                <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4 animate-pulse"></div>
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
                     </div>
                 </div>
@@ -147,7 +144,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     if (isFetchingNews) {
         return (
             <div className="max-w-4xl mx-auto">
-                <div className="bg-surface-light dark:bg-surface-dark/80 p-6 sm:p-8 rounded-2xl border border-outline-light dark:border-outline-dark shadow-xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
+                <div className="bg-surface-light dark:bg-surface-dark p-6 sm:p-8 rounded-2xl border border-outline-light dark:border-outline-dark shadow-xl flex flex-col items-center justify-center space-y-4 min-h-[400px]">
                      <LoadingIcon className="h-8 w-8 text-primary animate-spin"/>
                      <h3 className="text-lg font-semibold text-on-surface-light dark:text-on-surface-dark">AI 正在為您搜尋「{analysisTarget}」的最新新聞...</h3>
                      <p className="text-secondary-light dark:text-secondary-dark text-sm">請稍候，過程可能需要一點時間。</p>
@@ -158,7 +155,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
     
     return (
         <div className="max-w-4xl mx-auto space-y-8">
-             <div className="bg-surface-light dark:bg-surface-dark/80 p-4 sm:p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
+             <div className="bg-surface-light dark:bg-surface-dark p-4 sm:p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg">
                 <h3 className="text-base font-semibold text-on-surface-light dark:text-on-surface-dark">Gemini API 金鑰設定</h3>
                 <p className="text-xs text-secondary-light dark:text-secondary-dark mt-1">
                     金鑰將安全地儲存在您的瀏覽器中，不會上傳至任何伺服器。 
@@ -196,7 +193,7 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
                 </div>
             </div>
 
-            <div className="bg-surface-light dark:bg-surface-dark/80 p-6 sm:p-8 rounded-2xl border border-outline-light dark:border-outline-dark shadow-xl">
+            <div className="bg-surface-light dark:bg-surface-dark p-6 sm:p-8 rounded-2xl border border-outline-light dark:border-outline-dark shadow-xl">
                  <div className="flex justify-between items-start mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-primary">AI 新聞分析</h2>
@@ -242,29 +239,27 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
             )}
 
             {result && (
-                <div className="mt-8 space-y-6">
-                     <div className="flex items-center gap-3">
-                        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-                        <h3 className="text-xl font-bold">分析結果</h3>
-                    </div>
-                    
-                    <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '100ms'}}>
-                        <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-2">重點摘要</h4>
-                        <p className="text-on-surface-light dark:text-on-surface-dark leading-relaxed">{result.summary}</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '200ms'}}>
-                            <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-4">情緒分析</h4>
-                            <div className="flex items-center gap-4">
-                                {icons[result.sentiment]()}
-                                <span className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{ {Positive: '正面', Negative: '負面', Neutral: '中性'}[result.sentiment]}</span>
-                            </div>
+                <div className="mt-8">
+                     <h3 className="text-xl font-bold mb-4 text-primary pl-3 border-l-4 border-primary">分析結果</h3>
+                    <div className="space-y-6">
+                        <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '100ms'}}>
+                            <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-2">重點摘要</h4>
+                            <p className="text-on-surface-light dark:text-on-surface-dark leading-relaxed">{result.summary}</p>
                         </div>
-                        <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '300ms'}}>
-                            <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-4">潛在波動預測</h4>
-                            <div className="flex items-center gap-4">
-                                {icons[result.prediction]()}
-                                <span className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{ {Up: '上漲', Down: '下跌', Unchanged: '不變'}[result.prediction]}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '200ms'}}>
+                                <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-4">情緒分析</h4>
+                                <div className="flex items-center gap-4">
+                                    {icons[result.sentiment]()}
+                                    <span className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{ {Positive: '正面', Negative: '負面', Neutral: '中性'}[result.sentiment]}</span>
+                                </div>
+                            </div>
+                            <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '300ms'}}>
+                                <h4 className="font-semibold text-secondary-light dark:text-secondary-dark mb-4">潛在波動預測</h4>
+                                <div className="flex items-center gap-4">
+                                    {icons[result.prediction]()}
+                                    <span className="text-2xl font-bold text-on-surface-light dark:text-on-surface-dark">{ {Up: '上漲', Down: '下跌', Unchanged: '不變'}[result.prediction]}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -273,11 +268,8 @@ const AiAnalysisView: React.FC<AiAnalysisViewProps> = ({ analysisTarget, isFetch
 
             {sources.length > 0 && (
                 <div className="mt-8">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-                        <h3 className="text-xl font-bold">新聞來源</h3>
-                    </div>
-                    <div className="bg-surface-light dark:bg-surface-dark/80 p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '400ms'}}>
+                    <h3 className="text-xl font-bold mb-4 text-primary pl-3 border-l-4 border-primary">新聞來源</h3>
+                    <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-outline-light dark:border-outline-dark shadow-lg animate-stagger-in" style={{animationDelay: '400ms'}}>
                         <ul className="space-y-3 list-disc list-inside">
                             {sources.map((source, index) => (
                                 <li key={index} className="text-sm text-secondary-light dark:text-secondary-dark truncate">

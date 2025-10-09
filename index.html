@@ -6,49 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>股見 - 台灣股市洞察</title>
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#111113" />
+    <meta name="theme-color" content="#18181b" />
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTMgMTdMOSAxMUwxMyAxNUwyMSA3IiBzdHJva2U9IiNGOTcwM0UiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTUgN0gyMVYxMyIgc3Ryb2tlPSIjRjk3MDNFIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      :root {
-        --color-background-dark: #111113;
-        --color-surface-dark: #1c1c1e;
-        --color-outline-dark: rgba(255, 255, 255, 0.1);
-        --color-positive: 239 68 68; /* Red */
-        --color-negative: 34 197 94; /* Green */
-        --color-primary: 234 88 12; /* Orange */
-      }
-
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      .dark body {
-        background: var(--color-background-dark);
-        position: relative;
-        overflow-x: hidden;
-      }
-      .dark body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        opacity: 0.15;
-        background: conic-gradient(from 90deg at 50% 50%, #111113, rgb(var(--color-primary)), #111113, rgb(var(--color-negative)), #111113);
-        animation: rotate-gradient 30s linear infinite;
-      }
-
-      @keyframes rotate-gradient {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-
+      /* Custom scrollbar for modal content */
       .modal-scrollbar::-webkit-scrollbar {
         width: 6px;
       }
@@ -74,10 +43,10 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              primary: 'rgb(var(--color-primary) / <alpha-value>)', // Brand Orange
+              primary: '#ea580c', // Brand Orange
 
               background: {
-                light: '#f4f4f5', // Lighter Grey
+                light: '#f8f9fa', // Off-white
                 dark: '#111113',  // Near black
               },
               surface: {
@@ -91,11 +60,11 @@
 
               'on-primary': '#ffffff',
               'on-background': {
-                light: '#18181b', // Near black text
+                light: '#1f2937', // Dark grey text
                 dark: '#f4f4f5',  // Off-white text
               },
               'on-surface': {
-                light: '#18181b',
+                light: '#1f2937',
                 dark: '#f4f4f5',
               },
               secondary: {
@@ -107,9 +76,10 @@
                 dark: '#52525b',
               },
 
-              positive: 'rgb(var(--color-positive) / <alpha-value>)', // Red
-              negative: 'rgb(var(--color-negative) / <alpha-value>)', // Green
+              positive: '#ef4444', // Red
+              negative: '#22c55e', // Green
               'brand-gold': '#f59e0b',
+              'brand-orange': '#f97316',
               'surface-dark-alt': '#27272a', // Slightly lighter dark for buttons/cards
             },
             borderRadius: {
@@ -118,9 +88,9 @@
               '3xl': '1.5rem',
             },
             boxShadow: {
-              'glow-orange': '0 0 12px rgba(var(--color-primary), 0.4), 0 0 20px rgba(var(--color-primary), 0.2)',
-              'glow-positive': '0 0 12px rgba(var(--color-positive), 0.4), 0 0 20px rgba(var(--color-positive), 0.2)',
-              'glow-negative': '0 0 12px rgba(var(--color-negative), 0.4), 0 0 20px rgba(var(--color-negative), 0.2)',
+              'glow-orange': '0 0 30px rgba(249, 115, 22, 0.25)',
+              'glow-positive': '0 0 20px rgba(239, 68, 68, 0.2)',
+              'glow-negative': '0 0 20px rgba(34, 197, 94, 0.2)',
             },
             keyframes: {
               'fade-in': {
@@ -132,8 +102,8 @@
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
               'backdrop-fade-in': {
-                '0%': { 'backdrop-filter': 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' },
-                '100%': { 'backdrop-filter': 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.5)' },
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
               },
               'stagger-in': {
                  '0%': { opacity: '0', transform: 'translateY(10px)' },
@@ -151,7 +121,7 @@
             animation: {
               'fade-in': 'fade-in 0.3s ease-out forwards',
               'slide-up-fade': 'slide-up-fade 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
-              'backdrop-fade-in': 'backdrop-fade-in 0.3s ease-out forwards',
+              'backdrop-fade-in': 'backdrop-fade-in 0.3s ease-out',
               'stagger-in': 'stagger-in 0.5s ease-out forwards',
               'flip-in': 'flip-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
               'flip-out': 'flip-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards',

@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { fetchStockData, fetchIntradayData } from '../services/stockService';
+import { fetchStockData } from '../services/stockService';
 import { getFullStockList } from '../services/stockListService';
 import { Stock, StockListItem } from '../types';
 import { DEFAULT_STOCKS, REFRESH_INTERVAL } from '../constants';
@@ -20,12 +19,10 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="flex items-center gap-3 mb-6">
-      <span className="w-2 h-7 bg-primary rounded-full"></span>
-      <h2 className="text-2xl font-bold text-on-background-light dark:text-on-background-dark tracking-wide">
+    <h2 className="text-2xl font-bold mb-6 text-on-background-light dark:text-on-background-dark tracking-wide flex items-center gap-3">
+        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
         {children}
-      </h2>
-    </div>
+    </h2>
 );
 
 interface MarketViewProps {
@@ -35,14 +32,13 @@ interface MarketViewProps {
 
 const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
     const [stocks, setStocks] = useState<Stock[]>([]);
-    const [intradayDataMap, setIntradayDataMap] = useState<Map<string, number[]>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [watchlist, setWatchlist] = useLocalStorage<string[]>('watchlist', []);
     const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
     const [searchCodes, setSearchCodes] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [fullStockList, setFullStockList] = useState<StockListItem[]>([]);
+    const [fullStockList, setFullStockList] = useState<StockListItem[]>(TW_STOCKS);
 
 
     useEffect(() => {
@@ -52,8 +48,6 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 setFullStockList(list);
             } catch (error) {
                 console.warn("Could not load full stock list, search may be incomplete.", error);
-                // Fallback to static list if service fails
-                setFullStockList(TW_STOCKS as StockListItem[]);
             }
         };
         loadFullList();
@@ -64,57 +58,6 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
         return Array.from(combined);
     }, [watchlist, searchCodes]);
 
-    const fetchData = useCallback(async (signal: AbortSignal, codes: string[], currentStockData: Stock[]) => {
-        if (codes.length === 0) {
-            setStocks([]);
-            setIntradayDataMap(new Map());
-            return [];
-        }
-
-        const data = await fetchStockData(codes, fullStockList);
-        if (signal.aborted) return currentStockData;
-
-        // Fetch intraday data in parallel for the new stock data
-        const intradayPromises = data.map(stock => fetchIntradayData(stock.code));
-        const intradayResults = await Promise.all(intradayPromises);
-        
-        if (signal.aborted) return currentStockData;
-        
-        const newIntradayMap = new Map<string, number[]>();
-        intradayResults.forEach((chartData, index) => {
-            const stockCode = data[index]?.code;
-            if (stockCode && chartData) {
-                newIntradayMap.set(stockCode, chartData);
-            }
-        });
-
-        setIntradayDataMap(prevMap => {
-            const mergedMap = new Map(prevMap);
-            newIntradayMap.forEach((value, key) => mergedMap.set(key, value));
-            return mergedMap;
-        });
-
-        // Smartly merge new data with existing data to prevent glitches
-        const sortedData = data.sort((a, b) => codes.indexOf(a.code) - codes.indexOf(b.code));
-        const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
-        const allCodes = Array.from(new Set([...currentStockData.map(s => s.code), ...sortedData.map(s => s.code)]));
-
-        return allCodes.map(code => {
-            const currentStock = currentStockData.find(s => s.code === code);
-            const newStock = newStocksMap.get(code);
-
-            if (!newStock) return currentStock;
-            if (!currentStock) return newStock;
-
-            const currentHasTraded = currentStock.price !== currentStock.yesterdayPrice || currentStock.change !== 0;
-            const newIsPreMarket = newStock.price === newStock.yesterdayPrice && newStock.change === 0;
-
-            return (currentHasTraded && newIsPreMarket) ? currentStock : newStock;
-        }).filter((s): s is Stock => s !== undefined);
-
-    }, [fullStockList]);
-
-
     // Effect for user-driven data fetching (initial load, search, watchlist changes)
     useEffect(() => {
         const controller = new AbortController();
@@ -122,14 +65,22 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             setIsLoading(true);
             setError(null);
 
+            if (codesToFetch.length === 0) {
+                setStocks([]);
+                setIsLoading(false);
+                return;
+            }
+
             try {
-                const updatedStocks = await fetchData(controller.signal, codesToFetch, stocks);
+                // The stock service is not yet adapted for AbortController, so we handle cancellation logic here.
+                const data = await fetchStockData(codesToFetch);
                 if (!controller.signal.aborted) {
-                    setStocks(updatedStocks);
+                    const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
+                    setStocks(sortedData);
                 }
             } catch (err) {
                  if (!controller.signal.aborted) {
-                    setError(err instanceof Error ? err.message : '無法獲取股票資料，請稍後再試。');
+                    setError('無法獲取股票資料，請稍後再試。');
                     console.error(err);
                 }
             } finally {
@@ -139,30 +90,35 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             }
         };
 
-        if(fullStockList.length > 0) {
-           loadData();
-        }
+        loadData();
 
         return () => {
             controller.abort();
         };
-    }, [codesToFetch, fullStockList, fetchData]);
+    }, [codesToFetch]);
 
     // Effect for background refresh interval
     useEffect(() => {
         const intervalId = setInterval(async () => {
-            if (codesToFetch.length === 0 || document.hidden || fullStockList.length === 0) return;
+            if (codesToFetch.length === 0 || document.hidden) return;
             try {
-                const controller = new AbortController(); // No real abort, just for function signature
-                const updatedStocks = await fetchData(controller.signal, codesToFetch, stocks);
-                setStocks(updatedStocks);
+                const data = await fetchStockData(codesToFetch);
+                const sortedData = data.sort((a, b) => codesToFetch.indexOf(a.code) - codesToFetch.indexOf(b.code));
+                setStocks(currentStocks => {
+                    const newStocksMap = new Map(sortedData.map(s => [s.code, s]));
+                    const currentCodes = currentStocks.map(s => s.code);
+                    const newCodes = sortedData.map(s => s.code);
+                    const allCodes = Array.from(new Set([...currentCodes, ...newCodes]));
+                    
+                    return allCodes.map(code => newStocksMap.get(code) || currentStocks.find(s => s.code === code)).filter(Boolean) as Stock[];
+                });
             } catch (err) {
                 console.error("Background refresh failed:", err);
             }
         }, REFRESH_INTERVAL);
 
         return () => clearInterval(intervalId);
-    }, [codesToFetch, fullStockList, stocks, fetchData]);
+    }, [codesToFetch]);
 
 
     const toggleWatchlist = useCallback((code: string) => {
@@ -212,7 +168,6 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
                 <div key={stock.code} className="animate-stagger-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                     <StockCard
                         stock={stock}
-                        intradayData={intradayDataMap.get(stock.code)}
                         isWatched={watchlist.includes(stock.code)}
                         onToggleWatchlist={toggleWatchlist}
                         onCardClick={setSelectedStock}
@@ -227,7 +182,7 @@ const MarketView: React.FC<MarketViewProps> = ({ apiKey, onStartAnalysis }) => {
             <SearchBar stockList={fullStockList} onSearch={handleSearch} />
             {error && <p className="text-center text-positive bg-positive/20 p-3 rounded-lg">{error}</p>}
             
-            {(isLoading && stocks.length === 0) ? (
+            {isLoading ? (
                 <LoadingSpinner />
             ) : (
                 <>

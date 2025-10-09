@@ -1,7 +1,7 @@
 
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResult, NewsArticle, NewsSource, FinancialDataPoint } from '../types';
+import { AnalysisResult, NewsArticle, NewsSource, QuarterlyFinancials, FinancialAnalysis } from '../types';
 
 const ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
@@ -82,7 +82,11 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
     }
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `請使用網路搜尋，尋找關於台灣股票「${stockName} (${stockCode})」的最新財經新聞，並提供一篇約 150-200 字的繁體中文摘要。請確保摘要內容客觀，並僅基於你搜尋到的新聞來源。`;
+    const prompt = `你是一位頂尖的財經新聞專家，專精於台灣股市的即時動態。你的任務是使用網路搜尋能力，為台灣股票「${stockName} (${stockCode})」找出**今天（過去 24 小時內）最重要的一篇**財經新聞。
+
+你的回覆必須**只包含該新聞報導的「完整內文」或「詳盡摘要」**，必須客觀、中立，並且不包含任何前言、標題或個人評論。
+
+**重要**: 一家活躍的上市公司必定會有近期的相關新聞。如果第一時間找不到，請擴大搜尋範圍至各大財經新聞網站（例如：鉅亨網、經濟日報、工商時報），務必回傳一篇最相關的新聞內容。絕不可回覆找不到新聞。`;
 
     try {
         const response = await ai.models.generateContent({
@@ -117,48 +121,109 @@ export const fetchNewsWithGemini = async (apiKey: string, stockName: string, sto
     }
 };
 
-export const getAIFinancialAnalysis = async (apiKey: string, stockName: string, financialData: FinancialDataPoint[]): Promise<string> => {
-    if (!apiKey) {
-        throw new Error("API 金鑰未設定。");
-    }
-     if (financialData.length === 0) {
-        return "缺乏足夠的財務數據進行分析。";
-    }
 
+const FINANCIAL_DATA_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      quarter: { type: Type.STRING, description: "季度，格式為 'YYYYQX'，例如 '2023Q4'" },
+      revenue: { type: Type.NUMBER, description: "單季營業收入（單位：億元台幣）" },
+      grossMargin: { type: Type.NUMBER, description: "單季毛利率（單位：%）" },
+      operatingMargin: { type: Type.NUMBER, description: "單季營業利益率（單位：%）" },
+      netMargin: { type: Type.NUMBER, description: "單季稅後淨利率（單位：%）" },
+      eps: { type: Type.NUMBER, description: "單季每股盈餘（EPS，單位：元）" },
+    },
+    required: ["quarter", "revenue", "grossMargin", "operatingMargin", "netMargin", "eps"],
+  },
+};
+
+
+/**
+ * Fetches and analyzes financial data for a stock using a two-step Gemini process.
+ * Step 1: Fetches structured quarterly financial data using Google Search.
+ * Step 2: Generates a human-readable analysis based on the fetched data.
+ * @param apiKey The user's Google Gemini API key.
+ * @param stockName The name of the stock.
+ * @param stockCode The code of the stock.
+ * @returns A promise that resolves to a FinancialAnalysis object.
+ */
+export const getAIFinancialAnalysis = async (apiKey: string, stockName: string, stockCode: string): Promise<FinancialAnalysis> => {
+    if (!apiKey) {
+        throw new Error("請設定 API 金鑰以啟用財務分析功能。");
+    }
     const ai = new GoogleGenAI({ apiKey });
 
-    const dataTable = financialData.map(d => 
-        `| ${d.quarter.padEnd(6)} | ${d.revenue.toFixed(2).padStart(10)} 億 | ${d.grossMargin.toFixed(2).padStart(8)}% | ${d.operatingMargin.toFixed(2).padStart(10)}% | ${d.netMargin.toFixed(2).padStart(10)}% |`
-    ).join('\n');
+    // --- Step 1: Fetch structured financial data ---
+    const fetchDataPrompt = `你是一位頂尖的財經數據專家。請使用網路搜尋，為台灣股票「${stockName} (${stockCode})」找出最近 4 個季度的財報關鍵數據。
 
-    const prompt = `你是一位頂尖的台灣股市財務分析師。請僅根據以下提供給「${stockName}」的季度財務數據，以專業但簡潔的語言，用繁體中文提供一個約 3-4 句話的財務狀況總評。
+你的回覆必須是**一個 JSON 陣列**，其中包含 4 個物件，每個物件代表一個季度。
+請**只回傳 JSON 陣列**，不要包含任何其他文字、解釋或 markdown 格式 (例如 \`\`\`json)。
 
-你的分析應專注於：
-1.  **營收趨勢**：營收是成長、衰退還是持平？
-2.  **獲利能力**：毛利率、營業利益率和稅後淨利率的表現如何？它們是穩定、提升還是下滑？
-3.  **整體結論**：綜合來看，公司的財務表現是強勁、穩健、有待改善還是呈現警訊？
+**JSON 物件結構與單位:**
+- \`quarter\`: string (格式為 'YYYYQX', e.g., '2023Q4')
+- \`revenue\`: number (單季營業收入，單位：億元台幣)
+- \`grossMargin\`: number (單季毛利率，單位：%)
+- \`operatingMargin\`: number (單季營業利益率，單位：%)
+- \`netMargin\`: number (單季稅後淨利率，單位：%)
+- \`eps\`: number (單季每股盈餘/EPS，單位：元)
+`;
 
-**財務數據:**
-| 季度     | 營業收入     | 毛利率    | 營業利益率     | 稅後淨利率     |
-|----------|--------------|-----------|----------------|----------------|
-${dataTable}
-
-請直接提供總評，不要有任何前言或結語。`;
-    
+    let financialData: QuarterlyFinancials[];
+    let sources: NewsSource[];
     try {
-        const response = await ai.models.generateContent({
+        const dataResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: prompt,
+            contents: fetchDataPrompt,
             config: {
-                temperature: 0.3,
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 0 },
             },
         });
-        return response.text.trim();
-    } catch (error) {
-        console.error("Error getting AI financial analysis:", error);
-        if (error instanceof Error && error.message.includes('API key not valid')) {
-            throw new Error('您提供的 API 金鑰無效，請檢查後再試。');
+        
+        let jsonText = dataResponse.text.trim();
+        // Defensive parsing: remove markdown fences if the model includes them despite instructions.
+        if (jsonText.startsWith('```json')) {
+            jsonText = jsonText.slice(7, -3).trim();
+        } else if (jsonText.startsWith('```')) {
+            jsonText = jsonText.slice(3, -3).trim();
         }
-        throw new Error("AI 財務分析失敗，請稍後再試。");
+        
+        financialData = JSON.parse(jsonText) as QuarterlyFinancials[];
+        if (!Array.isArray(financialData) || financialData.length === 0) {
+            throw new Error("AI 未能回傳有效的財務數據陣列。");
+        }
+
+        const groundingChunks = dataResponse.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+        sources = groundingChunks
+            .map((chunk: any) => ({
+                title: chunk.web?.title || '未知來源',
+                uri: chunk.web?.uri || '#',
+            }))
+            .filter((source: NewsSource) => source.uri !== '#');
+
+        sources = Array.from(new Map(sources.map(s => [s.uri, s])).values());
+
+    } catch (error) {
+        console.error("Error fetching financial data with Gemini:", error);
+        throw new Error("AI 無法獲取結構化的財務數據，請稍後再試。");
+    }
+
+    // --- Step 2: Generate analysis summary from the data ---
+    const analysisPrompt = `你是一位專業的台灣股市分析師。請根據以下提供的 JSON 格式的季度財報數據，為股票「${stockName}」撰寫一段 150 字以內的簡潔財務趨勢分析。分析應涵蓋營收、獲利能力（毛利率、營業利益率）和每股盈餘（EPS）的趨勢。語氣需客觀、專業，適合一般投資人閱讀。\n\n財務數據：\n${JSON.stringify(financialData, null, 2)}`;
+    
+    try {
+        const analysisResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: analysisPrompt,
+            config: {
+                thinkingConfig: { thinkingBudget: 0 },
+            },
+        });
+        const summary = analysisResponse.text.trim();
+        return { data: financialData, summary, sources };
+    } catch (error) {
+        console.error("Error generating financial analysis with Gemini:", error);
+        throw new Error("AI 無法生成財務分析總結，請稍後再試。");
     }
 };

@@ -1,11 +1,11 @@
 
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Stock, HistoricalDataPoint, FinancialDataPoint } from '../types';
-import { fetchChartData, fetchFinancialData } from '../services/stockService';
+import { Stock, HistoricalDataPoint, FinancialAnalysis } from '../types';
 import { getAIFinancialAnalysis } from '../services/geminiService';
+import { fetchHistoricalData } from '../services/stockService';
 import StockChart from './StockChart';
-import BarChart from './BarChart';
+import FinancialAnalysisView from './FinancialAnalysisView';
 
 interface StockModalProps {
     stock: Stock;
@@ -14,8 +14,7 @@ interface StockModalProps {
     onStartAnalysis: (stockName: string, stockCode: string) => void;
 }
 
-type ModalTab = 'quote' | 'financials';
-type ChartRange = 'intraday' | 'daily' | 'weekly' | 'monthly';
+type ModalTab = 'info' | 'financials';
 
 const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -43,213 +42,36 @@ const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const LoadingSpinner: React.FC<{ small?: boolean }> = ({ small = false }) => (
     <div className={`flex justify-center items-center space-x-2 ${small ? '' : 'p-4'}`}>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
-        <div className={`bg-primary rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.2s' }}></div>
+        <div className={`bg-brand-orange rounded-full animate-pulse ${small ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} style={{ animationDelay: '0.4s' }}></div>
     </div>
 );
 
 const DetailItem: React.FC<{ label: string; value: string | number; className?: string }> = ({ label, value, className = '' }) => (
-    <div className="bg-white/5 rounded-xl p-3 text-center">
-        <p className="text-sm text-secondary-dark mb-1">{label}</p>
-        <p className={`text-lg font-semibold ${className}`}>{value}</p>
+    <div className="bg-surface-dark-alt/50 rounded-xl p-3 text-center">
+        <p className="text-sm text-secondary-dark mb-1.5">{label}</p>
+        <p className={`text-lg font-semibold text-on-surface-dark ${className}`}>{value}</p>
     </div>
 );
 
-const QuoteTab: React.FC<{ stock: Stock, apiKey: string, onStartAnalysis: (name: string, code: string) => void }> = ({ stock, apiKey, onStartAnalysis }) => {
-    const isPositive = stock.change > 0;
-    const isNegative = stock.change < 0;
-    const chartColor = isPositive
-        ? 'rgb(var(--color-positive))'
-        : isNegative
-        ? 'rgb(var(--color-negative))'
-        : '#a1a1aa';
-    
-    const [chartData, setChartData] = useState<HistoricalDataPoint[] | null>(null);
-    const [isChartLoading, setIsChartLoading] = useState(true);
-    const [chartError, setChartError] = useState<string | null>(null);
-    const [chartRange, setChartRange] = useState<ChartRange>('intraday');
-
-    useEffect(() => {
-        const loadChartData = async () => {
-            setIsChartLoading(true);
-            setChartError(null);
-            setChartData(null);
-            try {
-                const data = await fetchChartData(stock.code, chartRange);
-                setChartData(data);
-            } catch (err) {
-                 if (err instanceof Error) {
-                    setChartError(err.message);
-                } else {
-                    setChartError('獲取走勢資料時發生未知錯誤。');
-                }
-            } finally {
-                setIsChartLoading(false);
-            }
-        };
-        loadChartData();
-    }, [stock.code, chartRange]);
-
-    const getStatColor = (value: number) => {
-        if (value > stock.yesterdayPrice) return 'text-positive';
-        if (value < stock.yesterdayPrice) return 'text-negative';
-        return 'text-on-surface-dark';
-    };
-
-    const getRangeButtonClass = (range: ChartRange) => 
-        `flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/80 ${
-            chartRange === range
-                ? 'bg-primary/20 text-primary'
-                : 'text-secondary-dark hover:bg-white/5'
-        }`;
-    
-    const rangeLabels: Record<ChartRange, string> = { 'intraday': '即時行情', 'daily': '日線', 'weekly': '周線', 'monthly': '月線' };
-
-    return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex justify-center items-center bg-black/20 p-1 rounded-lg w-full mx-auto">
-                {(['intraday', 'daily', 'weekly', 'monthly'] as const).map(range => (
-                    <button key={range} onClick={() => setChartRange(range)} className={getRangeButtonClass(range)}>
-                        {rangeLabels[range]}
-                    </button>
-                ))}
-            </div>
-            <div className="h-40 -mx-6 bg-black/10 rounded-lg">
-                {isChartLoading ? (
-                        <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
-                ) : chartError ? (
-                        <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{chartError}</p></div>
-                ) : chartData ? (
-                        <StockChart priceData={chartData} color={chartColor} range={chartRange} />
-                ) : null}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <DetailItem label="開盤價" value={stock.open.toFixed(2)} className={getStatColor(stock.open)} />
-                <DetailItem label="最高價" value={stock.high.toFixed(2)} className={getStatColor(stock.high)} />
-                <DetailItem label="最低價" value={stock.low.toFixed(2)} className={getStatColor(stock.low)} />
-                <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} className="text-on-surface-dark" />
-                <DetailItem label="成交量" value={`${Math.floor(stock.volume).toLocaleString()}`} className="text-on-surface-dark" />
-            </div>
-            <button
-                onClick={() => onStartAnalysis(stock.name, stock.code)}
-                disabled={!apiKey}
-                className="w-full flex justify-center items-center gap-2 bg-primary/90 hover:bg-primary text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-not-allowed transform hover:scale-105"
-            >
-                <SparklesIcon className="w-5 h-5" />
-                一鍵深度洞察
-            </button>
-        </div>
-    );
-};
-
-const FinancialsTab: React.FC<{ stock: Stock, apiKey: string }> = ({ stock, apiKey }) => {
-    const [financialData, setFinancialData] = useState<FinancialDataPoint[] | null>(null);
-    const [isFinancialsLoading, setIsFinancialsLoading] = useState(true);
-    const [financialsError, setFinancialsError] = useState<string | null>(null);
-    
-    const [aiSummary, setAiSummary] = useState<string | null>(null);
-    const [isAiLoading, setIsAiLoading] = useState(true);
-    const [aiError, setAiError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const loadFinancials = async () => {
-            setIsFinancialsLoading(true);
-            setFinancialsError(null);
-            setFinancialData(null);
-            setIsAiLoading(true);
-            setAiError(null);
-            setAiSummary(null);
-
-            try {
-                const data = await fetchFinancialData(stock);
-                setFinancialData(data);
-                
-                try {
-                    const summary = await getAIFinancialAnalysis(apiKey, stock.name, data);
-                    setAiSummary(summary);
-                } catch (err) {
-                    setAiError(err instanceof Error ? err.message : 'AI 分析失敗');
-                }
-
-            } catch (err) {
-                setFinancialsError(err instanceof Error ? err.message : '無法獲取財務資料');
-            } finally {
-                setIsFinancialsLoading(false);
-                setIsAiLoading(false);
-            }
-        };
-
-        if (apiKey) {
-            loadFinancials();
-        } else {
-             setFinancialsError("請先在「AI 新聞分析」頁面設定 Gemini API 金鑰以使用此功能。");
-             setIsFinancialsLoading(false);
-             setIsAiLoading(false);
-        }
-    }, [stock, apiKey]);
-
-    if (isFinancialsLoading) {
-        return <div className="py-10"><LoadingSpinner /></div>;
-    }
-
-    if (financialsError) {
-        return <div className="text-center py-10 text-positive/90 text-sm">{financialsError}</div>;
-    }
-
-    if (!financialData || financialData.length < 1) {
-        return <div className="text-center py-10 text-secondary-dark text-sm">此股票缺乏足夠的季度財務數據。</div>;
-    }
-
-    const chartData = {
-        revenue: financialData.map(d => ({ label: d.quarter, value: d.revenue })),
-        grossMargin: financialData.map(d => ({ label: d.quarter, value: d.grossMargin })),
-        operatingMargin: financialData.map(d => ({ label: d.quarter, value: d.operatingMargin })),
-        netMargin: financialData.map(d => ({ label: d.quarter, value: d.netMargin })),
-    };
-
-    return (
-        <div className="space-y-6 animate-fade-in">
-            <div>
-                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 text-primary">
-                    <SparklesIcon className="w-5 h-5" /> AI 財務總評
-                </h4>
-                <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 text-sm text-on-surface-dark/90 leading-relaxed">
-                   {isAiLoading && (
-                        <div className="space-y-2">
-                           <div className="h-3 bg-primary/30 rounded w-full animate-pulse"></div>
-                           <div className="h-3 bg-primary/30 rounded w-5/6 animate-pulse"></div>
-                           <div className="h-3 bg-primary/30 rounded w-3/4 animate-pulse"></div>
-                        </div>
-                   )}
-                   {aiError && <p className="text-positive/90">{aiError}</p>}
-                   {aiSummary && <p>{aiSummary}</p>}
-                </div>
-            </div>
-            <div>
-                <h4 className="font-bold text-lg mb-3 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>
-                    關鍵指標趨勢
-                </h4>
-                 <div className="grid grid-cols-2 gap-4">
-                    <BarChart title="營業收入" unit="億元" data={chartData.revenue} />
-                    <BarChart title="毛利率" unit="%" data={chartData.grossMargin} />
-                    <BarChart title="營業利益率" unit="%" data={chartData.operatingMargin} />
-                    <BarChart title="稅後淨利率" unit="%" data={chartData.netMargin} />
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
-    const isPositive = stock.change > 0;
-    const isNegative = stock.change < 0;
-    const priceColor = isPositive ? 'text-positive' : isNegative ? 'text-negative' : 'text-on-surface-dark';
+    const isPositive = stock.change >= 0;
+    const priceColor = isPositive ? 'text-positive' : 'text-negative';
+    const chartColor = isPositive ? '#ef4444' : '#22c55e';
     
     const [isClosing, setIsClosing] = useState(false);
-    const [activeTab, setActiveTab] = useState<ModalTab>('quote');
     
+    const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[] | null>(null);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+
+    const [activeTab, setActiveTab] = useState<ModalTab>('info');
+    const [financialAnalysis, setFinancialAnalysis] = useState<FinancialAnalysis | null>(null);
+    const [isFinancialsLoading, setIsFinancialsLoading] = useState(true);
+    const [financialsError, setFinancialsError] = useState<string | null>(null);
+
+
     const handleClose = useCallback(() => {
         if (isClosing) return;
         setIsClosing(true);
@@ -271,16 +93,76 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleClose]);
     
-    const getTabClass = (tab: ModalTab) => 
-        `px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/80 ${
-            activeTab === tab 
-            ? 'bg-primary/90 text-on-primary' 
-            : 'text-secondary-dark hover:bg-white/10'
-        }`;
+    useEffect(() => {
+        const loadHistoricalData = async () => {
+            setIsHistoryLoading(true);
+            setHistoryError(null);
+            setHistoricalData(null);
+            try {
+                const data = await fetchHistoricalData(stock.code);
+                const todayPoint: HistoricalDataPoint = {
+                    date: new Date().toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+                    close: stock.price,
+                };
+                
+                const combinedData = data ? [todayPoint, ...data.filter(d => d.date !== todayPoint.date)] : [todayPoint];
+                setHistoricalData(combinedData);
+            } catch (err) {
+                 if (err instanceof Error) {
+                    setHistoryError(err.message);
+                } else {
+                    setHistoryError('獲取歷史資料時發生未知錯誤。');
+                }
+            } finally {
+                setIsHistoryLoading(false);
+            }
+        };
+        loadHistoricalData();
+    }, [stock.code, stock.price]);
+
+    useEffect(() => {
+        const fetchFinancials = async () => {
+             if (!apiKey) {
+                setFinancialsError("請設定 API 金鑰以啟用此功能。");
+                setIsFinancialsLoading(false);
+                return;
+            }
+            setIsFinancialsLoading(true);
+            setFinancialsError(null);
+            try {
+                const analysis = await getAIFinancialAnalysis(apiKey, stock.name, stock.code);
+                setFinancialAnalysis(analysis);
+            } catch (err) {
+                if (err instanceof Error) {
+                    setFinancialsError(err.message);
+                } else {
+                    setFinancialsError("無法獲取財務分析資料。");
+                }
+            } finally {
+                setIsFinancialsLoading(false);
+            }
+        };
+
+        fetchFinancials();
+    }, [stock, apiKey]);
+    
+    const handleDeepAnalysisClick = () => {
+        onStartAnalysis(stock.name, stock.code);
+        handleClose();
+    };
+
+    const TabButton: React.FC<{tab: ModalTab, label: string}> = ({tab, label}) => (
+        <button 
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-200 focus:outline-none ${activeTab === tab ? 'bg-surface-dark-alt text-on-surface-dark' : 'text-secondary-dark hover:bg-white/5'}`}
+        >
+            {label}
+        </button>
+    )
 
     return (
         <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-backdrop-fade-in"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-fade-in"
             style={{ perspective: '2000px' }}
             onClick={handleClose}
             role="dialog"
@@ -288,48 +170,86 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
             aria-labelledby="stock-modal-title"
         >
             <div 
-                className={`bg-surface-dark/80 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl w-full max-w-md flex flex-col overflow-hidden backface-hidden dark max-h-[90vh] ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
-                style={{ transformStyle: 'preserve-3d', boxShadow: '0 0 40px rgba(0,0,0,0.5)' }}
+                className={`bg-background-dark rounded-3xl border border-outline-dark shadow-2xl w-full max-w-lg flex flex-col overflow-hidden backface-hidden dark max-h-[90vh] ${isClosing ? 'animate-flip-out' : 'animate-flip-in'}`}
+                style={{ transformStyle: 'preserve-3d' }}
                 onClick={(e) => e.stopPropagation()}
                 onAnimationEnd={handleAnimationEnd}
             >
-                <div className="flex-shrink-0 p-6 pb-0">
-                     <button 
-                        onClick={handleClose} 
-                        className="absolute top-4 right-4 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary z-20"
-                        aria-label="關閉視窗"
-                    >
-                        <CloseIcon className="w-5 h-5" />
-                    </button>
-                    <div id="stock-modal-title" className="flex items-center gap-3">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : isNegative ? 'bg-negative/20' : 'bg-white/10'}`}>
-                            {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : isNegative ? <ArrowDownIcon className="w-5 h-5 text-negative" /> : <span className="text-xl font-bold text-secondary-dark">-</span>}
+                {/* Header */}
+                 <div className="p-6 border-b border-outline-dark">
+                    <div className="relative">
+                         <button 
+                            onClick={handleClose} 
+                            className="absolute -top-2 -right-2 text-secondary-dark hover:text-on-surface-dark bg-white/5 hover:bg-white/10 rounded-full p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-orange z-20"
+                            aria-label="關閉視窗"
+                        >
+                            <CloseIcon className="w-5 h-5" />
+                        </button>
+                        <div id="stock-modal-title" className="flex items-center gap-3 mb-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isPositive ? 'bg-positive/20' : 'bg-negative/20'}`}>
+                               {isPositive ? <ArrowUpIcon className="w-5 h-5 text-positive" /> : <ArrowDownIcon className="w-5 h-5 text-negative" /> }
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-on-surface-dark">{stock.name}</h2>
+                                <p className="text-sm text-secondary-dark">{stock.code}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-on-surface-dark">{stock.name}</h2>
-                            <p className="text-sm text-secondary-dark">{stock.code}</p>
+                         <div className="text-left">
+                            <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
+                            <div className={`text-base font-semibold ${priceColor} mt-1 flex items-center`}>
+                                <span>{isPositive ? '▲' : '▼'}</span>
+                                <span className="ml-1">{stock.change.toFixed(2)}</span>
+                                <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="mt-4 text-left">
-                        <p className={`text-5xl font-bold ${priceColor}`}>{stock.price.toFixed(2)}</p>
-                        <div className={`text-base font-semibold ${priceColor} mt-1 flex items-center`}>
-                            <span>{isPositive ? '▲' : isNegative ? '▼' : ''}</span>
-                            <span className={isPositive || isNegative ? "ml-1" : ""}>{stock.change.toFixed(2)}</span>
-                            <span className="ml-2">({stock.changePercent.toFixed(2)}%)</span>
-                        </div>
+                 </div>
+
+                {/* Tabs */}
+                <div className="flex-shrink-0 p-2 bg-black/20">
+                    <div className="flex items-center justify-center space-x-2">
+                        <TabButton tab="info" label="即時行情" />
+                        <TabButton tab="financials" label="財務簡析" />
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 p-4">
-                     <div className="bg-black/20 p-1 rounded-xl flex items-center gap-1">
-                        <button onClick={() => setActiveTab('quote')} className={`w-1/2 ${getTabClass('quote')}`}>即時行情</button>
-                        <button onClick={() => setActiveTab('financials')} className={`w-1/2 ${getTabClass('financials')}`}>財務簡析</button>
-                    </div>
-                </div>
-
-                <div className="flex-grow overflow-y-auto modal-scrollbar p-6 pt-2">
-                   {activeTab === 'quote' && <QuoteTab stock={stock} apiKey={apiKey} onStartAnalysis={onStartAnalysis} />}
-                   {activeTab === 'financials' && <FinancialsTab stock={stock} apiKey={apiKey} />}
+                <div className="flex-grow overflow-y-auto modal-scrollbar">
+                    {activeTab === 'info' && (
+                        <div className="p-6 space-y-6">
+                            <div className="h-40 -mx-6">
+                                {isHistoryLoading ? (
+                                    <div className="h-full flex items-center justify-center"><LoadingSpinner/></div>
+                                ) : historyError ? (
+                                    <div className="h-full flex items-center justify-center"><p className="text-sm text-center text-positive/90 p-2">{historyError}</p></div>
+                                ) : historicalData ? (
+                                    <StockChart priceData={historicalData} color={chartColor} />
+                                ) : null}
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <DetailItem label="開盤價" value={stock.open.toFixed(2)} />
+                                <DetailItem label="最高價" value={stock.high.toFixed(2)} className="text-positive" />
+                                <DetailItem label="最低價" value={stock.low.toFixed(2)} className="text-negative" />
+                                <DetailItem label="昨收價" value={stock.yesterdayPrice.toFixed(2)} />
+                                <DetailItem label="成交量" value={`${Math.floor(stock.volume / 1000).toLocaleString()} 張`} />
+                            </div>
+                             <button
+                                onClick={handleDeepAnalysisClick}
+                                disabled={!apiKey}
+                                className="w-full flex justify-center items-center gap-2 bg-surface-dark-alt hover:bg-gray-700 text-on-primary font-bold py-3 px-4 rounded-xl transition duration-300 disabled:bg-tertiary-dark disabled:cursor-not-allowed transform hover:scale-105"
+                            >
+                                <SparklesIcon className="w-5 h-5" />
+                                深入新聞分析
+                            </button>
+                        </div>
+                    )}
+                    {activeTab === 'financials' && (
+                        <FinancialAnalysisView 
+                            stockCode={stock.code}
+                            isLoading={isFinancialsLoading}
+                            error={financialsError}
+                            analysis={financialAnalysis}
+                        />
+                    )}
                 </div>
             </div>
         </div>

@@ -68,7 +68,7 @@ const App: React.FC = () => {
         )}
       </main>
        <footer className="text-center p-6 text-xs text-secondary-light dark:text-secondary-dark mt-8">
-        股見 - 台灣股市洞察 © 2025. All data is for informational purposes only.
+        股見 - 台灣股市洞察 © 2025. 所有資料僅供參考。
       </footer>
     </div>
   );
