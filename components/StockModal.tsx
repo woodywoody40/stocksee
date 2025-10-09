@@ -58,9 +58,9 @@ const DetailItem: React.FC<{ label: string; value: string | number; className?: 
 
 
 const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStartAnalysis }) => {
+    // Daily change for header display
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
-    const chartColor = isPositive ? '#ef4444' : '#22c55e';
     
     const [isClosing, setIsClosing] = useState(false);
     
@@ -145,6 +145,19 @@ const StockModal: React.FC<StockModalProps> = ({ stock, apiKey, onClose, onStart
                 return fullHistoricalData.slice(0, 30);
         }
     }, [fullHistoricalData, activeChartTab]);
+
+    // Determine chart color based on the selected time range's start and end points.
+    const chartColor = useMemo(() => {
+        if (!chartData || chartData.length < 2) {
+            // Fallback to daily change if not enough data for the range
+            return stock.change >= 0 ? '#ef4444' : '#22c55e';
+        }
+        // Data is sorted newest to oldest. Compare the newest (index 0) with the oldest (last index).
+        const latestPrice = chartData[0].close;
+        const earliestPrice = chartData[chartData.length - 1].close;
+        return latestPrice >= earliestPrice ? '#ef4444' : '#22c55e';
+    }, [chartData, stock.change]);
+
 
     useEffect(() => {
         const fetchFinancials = async () => {
