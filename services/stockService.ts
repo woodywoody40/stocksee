@@ -1,5 +1,3 @@
-
-
 import { Stock, HistoricalDataPoint } from '../types';
 import { getProxiedUrl } from './proxyHelper';
 
@@ -85,15 +83,19 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
 
 
 /**
- * Fetches historical daily stock data for the last ~30 days for technical analysis.
+ * Fetches historical daily stock data for the last ~3 years for technical analysis.
  * It tries fetching from TSE, OTC, and Emerging markets in sequence to find data.
  * @param code - The stock code.
  * @returns A promise that resolves to an array of HistoricalDataPoint objects.
  */
 export const fetchHistoricalData = async (code: string): Promise<HistoricalDataPoint[]> => {
     const today = new Date();
-    // Fetch data for the current month and the previous month to ensure we get ~30 days.
-    const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    // Fetch data for the current month and the previous 35 months to ensure we have enough
+    // data for weekly/monthly charts (approx. 3 years).
+    const dates: Date[] = [];
+    for (let i = 0; i < 36; i++) {
+        dates.push(new Date(today.getFullYear(), today.getMonth() - i, 1));
+    }
     
     // Define the different data sources and their properties.
     const sources = {
@@ -123,7 +125,6 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
         for (const key of Object.keys(sources) as Array<keyof typeof sources>) {
             sourceKey = key;
             const currentSource = sources[sourceKey];
-            const dates = [today, lastMonthDate];
 
             const urls = dates.map(date => {
                 const year = date.getFullYear();
@@ -190,8 +191,8 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
             return dateB.getTime() - dateA.getTime();
         });
 
-        // Return the most recent 30 trading days.
-        return uniquePoints.slice(0, 30);
+        // Return up to 3 years of trading days of data.
+        return uniquePoints.slice(0, 365 * 3);
 
     } catch (error) {
         console.error(`Failed to fetch or parse historical data for ${code}:`, error);

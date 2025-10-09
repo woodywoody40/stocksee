@@ -77,7 +77,11 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
         tooltipCircleRef.current.setAttribute('cx', `${point.x}`);
         tooltipCircleRef.current.setAttribute('cy', `${point.y}`);
 
-        tooltipTextRef.current.innerHTML = `<div class="text-center">${point.data.date}</div><div class="font-bold text-center">${point.data.close.toFixed(2)}</div>`;
+        let tooltipHtml = `<div class="grid grid-cols-[auto,1fr] gap-x-2 items-center"><strong class="text-white/90">日期:</strong><span>${point.data.date}</span>`;
+        tooltipHtml += `<strong class="text-white/90" style="color:${priceColor}">收盤:</strong><span style="color:${priceColor}">${point.data.close.toFixed(2)}</span>`;
+        tooltipHtml += '</div>';
+
+        tooltipTextRef.current.innerHTML = tooltipHtml;
         
         const onScreenX = (point.x / svgWidth) * svgRect.width;
         const tooltipWidth = tooltipTextRef.current.offsetWidth;
@@ -87,7 +91,7 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
         }
         tooltipTextRef.current.style.transform = `translateX(${textX}px)`;
 
-    }, [points, xStep, svgWidth]);
+    }, [points, xStep, svgWidth, priceColor]);
 
     const handleInteractionEnd = useCallback(() => {
         if (tooltipGroupRef.current && tooltipTextRef.current) {
@@ -160,16 +164,16 @@ const StockChart: React.FC<StockChartProps> = ({ priceData, color }) => {
                 </g>
             </svg>
             
-            <div className="absolute top-0 right-0 flex items-center text-xs p-1 space-x-2 bg-surface-dark/50 rounded-bl-md">
+            <div className="absolute top-0 right-0 flex flex-wrap justify-end items-center text-xs p-1 gap-x-2 gap-y-1 bg-surface-dark/50 rounded-bl-md">
                 <div className="flex items-center gap-1.5">
                     <div className="w-3 h-0.5" style={{ backgroundColor: priceColor }}></div>
-                    <span className="text-secondary-dark font-mono">股價</span>
+                    <span className="text-secondary-dark font-mono">收盤價</span>
                 </div>
             </div>
             
             <div
                 ref={tooltipTextRef}
-                className="absolute top-2 bg-black/70 text-white text-xs rounded-md p-2 pointer-events-none z-10"
+                className="absolute top-2 bg-black/80 text-white text-xs rounded-md p-2 pointer-events-none z-10 font-mono"
                 style={{ opacity: 0, transition: 'opacity 0.1s ease, transform 0.1s ease' }}
             >
                 {/* Content is set via innerHTML */}
