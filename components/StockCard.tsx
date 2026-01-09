@@ -27,7 +27,7 @@ const ChartLoadingSkeleton: React.FC = () => (
 const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchlist, onCardClick }) => {
     const isPositive = stock.change >= 0;
     const priceColor = isPositive ? 'text-positive' : 'text-negative';
-    
+
     const [chartData, setChartData] = useState<number[]>([]);
     const [isChartLoading, setIsChartLoading] = useState(true);
 
@@ -36,30 +36,31 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
         const loadChartData = async () => {
             if (!stock.code) return;
 
-            setIsChartLoading(true);
+            // Only show loader on initial fetch or code change, not price update
+            if (chartData.length === 0) setIsChartLoading(true);
+
             try {
                 // fetchHistoricalData returns data sorted from newest to oldest.
+                // We cache this in a way or just trust the memo? 
+                // Getting history every few seconds is bad.
+                // Let's rely on the parent or just fetch once per code mount.
                 const history = await fetchHistoricalData(stock.code);
-                
+
                 if (!isMounted) return;
 
                 // We want a 7-day trend, so we take the last 6 closing prices plus today's price.
                 const last6DaysData = history.slice(0, 6);
-                
+
                 // Reverse the array to plot from oldest to newest.
                 last6DaysData.reverse();
-                
-                const historicalPrices = last6DaysData.map(d => d.close);
-                
-                // Combine historical prices with today's live price for an up-to-date chart.
-                const finalChartData = [...historicalPrices, stock.price];
 
-                setChartData(finalChartData);
+                const historicalPrices = last6DaysData.map(d => d.close);
+
+                setChartData(historicalPrices);
             } catch (error) {
                 console.error(`Failed to load chart data for ${stock.code}:`, error);
                 if (isMounted) {
-                    // Provide a simple fallback chart if the API fails.
-                    setChartData([stock.yesterdayPrice, stock.price].filter(p => p > 0));
+                    setChartData([stock.yesterdayPrice].filter(p => p > 0));
                 }
             } finally {
                 if (isMounted) {
@@ -68,12 +69,21 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
             }
         };
 
+        // Only fetch history if we don't have it or code changed.
+        // We do NOT want to fetch history every time price updates.
         loadChartData();
 
         return () => {
             isMounted = false;
         };
-    }, [stock.code, stock.price, stock.yesterdayPrice]); // Re-render chart if stock or its price changes.
+    }, [stock.code]); // Only strictly fetch history when code changes
+
+    // Combine historical data with current price for display
+    // This runs fast on every price update without async fetching
+    const displayChartData = React.useMemo(() => {
+        if (chartData.length === 0) return [stock.yesterdayPrice, stock.price];
+        return [...chartData, stock.price];
+    }, [chartData, stock.price, stock.yesterdayPrice]);
 
     const handleStarClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -81,7 +91,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
     };
 
     return (
-        <div 
+        <div
             className="relative bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-2xl p-4 cursor-pointer transition-all duration-300 ease-in-out group hover:-translate-y-1 hover:shadow-xl shadow-lg shadow-gray-100 dark:shadow-none"
             onClick={() => onCardClick(stock)}
             role="button"
@@ -93,7 +103,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
                         <h3 className="font-bold text-lg text-on-surface-light dark:text-on-surface-dark truncate max-w-[120px]">{stock.name}</h3>
                         <p className="text-sm text-secondary-light dark:text-secondary-dark">{stock.code}</p>
                     </div>
-                    <button 
+                    <button
                         onClick={handleStarClick}
                         className="text-secondary-light dark:text-secondary-dark hover:text-brand-gold transition-colors p-1 -mr-1 -mt-1 z-20"
                         aria-label={isWatched ? `從關注列表移除 ${stock.name}` : `將 ${stock.name} 加入關注列表`}
@@ -111,7 +121,7 @@ const StockCard: React.FC<StockCardProps> = ({ stock, isWatched, onToggleWatchli
                         </div>
                     </div>
                     <div className="w-2/5 h-10">
-                        {isChartLoading ? <ChartLoadingSkeleton /> : <Sparkline data={chartData} isPositive={isPositive} />}
+                        {isChartLoading ? <ChartLoadingSkeleton /> : <Sparkline data={displayChartData} isPositive={isPositive} />}
                     </div>
                 </div>
             </div>

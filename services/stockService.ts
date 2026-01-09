@@ -11,6 +11,8 @@ interface TwseStock {
     h: string; // high
     l: string; // low
     y: string; // yesterday's price
+    a: string; // best ask prices
+    b: string; // best bid prices
 }
 
 /**
@@ -52,14 +54,39 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
             return []; // No data for the given codes, not an error.
         }
 
-        const stocks: Stock[] = data.msgArray.map((item: TwseStock) => {
+        // Define a temporary type that includes a flag for valid price data
+        type StockWithFlag = Stock & { hasRealPrice: boolean };
+
+        const stocks: StockWithFlag[] = data.msgArray.map((item: TwseStock) => {
             // Parse with fallback for safety
             const yesterdayPrice = parseFloat(item.y);
             let price = parseFloat(item.z);
+            let hasRealPrice = !isNaN(price);
 
-            // If current price is not available (e.g., no trades yet), use yesterday's price
-            // This prevents NaN from breaking the UI
-            if (isNaN(price) && !isNaN(yesterdayPrice)) {
+            // If "Recent Trade Price" (z) is missing (common in MIS API), try to infer from Market Depth
+            if (!hasRealPrice) {
+                // Try Best Ask (Sell Price) FIRST - Yahoo Finance often aligns with the lowest sell price 
+                // when there's no recent trade match.
+                if (item.a && item.a.includes('_')) {
+                    const bestAsk = parseFloat(item.a.split('_')[0]);
+                    if (!isNaN(bestAsk) && bestAsk > 0) {
+                        price = bestAsk;
+                        hasRealPrice = true;
+                    }
+                }
+
+                // If no Ask, try Best Bid (Buy Price)
+                if (!hasRealPrice && item.b && item.b.includes('_')) {
+                    const bestBid = parseFloat(item.b.split('_')[0]);
+                    if (!isNaN(bestBid) && bestBid > 0) {
+                        price = bestBid;
+                        hasRealPrice = true;
+                    }
+                }
+            }
+
+            // If still no price (e.g. pre-market), fallback to yesterday's price
+            if (!hasRealPrice && !isNaN(yesterdayPrice)) {
                 price = yesterdayPrice;
             }
 
@@ -77,11 +104,30 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
                 low: parseFloat(item.l) || 0,
                 volume: parseInt(item.v, 10) || 0,
                 yesterdayPrice: isNaN(yesterdayPrice) ? 0 : yesterdayPrice,
+                hasRealPrice: hasRealPrice
             };
         });
 
-        const uniqueStocks = Array.from(new Map(stocks.map(stock => [stock.code, stock])).values());
-        return uniqueStocks;
+        // Deduplicate: If we get multiple entries for the same code (e.g. TSE vs OTC query),
+        // prioritize the one that actually has a real trade price.
+        const uniqueStockMap = new Map<string, StockWithFlag>();
+
+        stocks.forEach(stock => {
+            const existing = uniqueStockMap.get(stock.code);
+            if (!existing) {
+                uniqueStockMap.set(stock.code, stock);
+            } else {
+                // If the new entry has a real price and the existing one doesn't, overwrite it.
+                // This handles cases where the API returns an empty object for the wrong market type
+                // before or after the correct market type object.
+                if (stock.hasRealPrice && !existing.hasRealPrice) {
+                    uniqueStockMap.set(stock.code, stock);
+                }
+            }
+        });
+
+        // Remove the temporary flag before returning
+        return Array.from(uniqueStockMap.values()).map(({ hasRealPrice, ...stock }) => stock);
 
     } catch (error) {
         console.error("Failed to fetch real stock data via CORS proxy:", error);
