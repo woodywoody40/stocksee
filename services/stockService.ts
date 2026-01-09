@@ -28,7 +28,7 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
 
     const query = codes.flatMap(code => [`tse_${code}.tw`, `otc_${code}.tw`]).join('|');
     const apiUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${query}&json=1&delay=0&_=${Date.now()}`;
-    
+
     const proxyUrl = getProxiedUrl(apiUrl);
 
     try {
@@ -38,7 +38,7 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
             console.error(`Proxy request failed with status ${response.status}:`, errorBody.substring(0, 500));
             throw new Error(`Network response was not ok: ${response.statusText}`);
         }
-        
+
         const responseText = await response.text();
         let data;
         try {
@@ -53,22 +53,30 @@ export const fetchStockData = async (codes: string[]): Promise<Stock[]> => {
         }
 
         const stocks: Stock[] = data.msgArray.map((item: TwseStock) => {
-            const price = parseFloat(item.z);
+            // Parse with fallback for safety
             const yesterdayPrice = parseFloat(item.y);
+            let price = parseFloat(item.z);
+
+            // If current price is not available (e.g., no trades yet), use yesterday's price
+            // This prevents NaN from breaking the UI
+            if (isNaN(price) && !isNaN(yesterdayPrice)) {
+                price = yesterdayPrice;
+            }
+
             const change = price - yesterdayPrice;
             const changePercent = yesterdayPrice !== 0 ? (change / yesterdayPrice) * 100 : 0;
 
             return {
                 code: item.c,
                 name: item.n,
-                price: price,
-                change: parseFloat(change.toFixed(2)),
-                changePercent: parseFloat(changePercent.toFixed(2)),
-                open: parseFloat(item.o),
-                high: parseFloat(item.h),
-                low: parseFloat(item.l),
-                volume: parseInt(item.v, 10),
-                yesterdayPrice: yesterdayPrice,
+                price: isNaN(price) ? 0 : price,
+                change: isNaN(change) ? 0 : parseFloat(change.toFixed(2)),
+                changePercent: isNaN(changePercent) ? 0 : parseFloat(changePercent.toFixed(2)),
+                open: parseFloat(item.o) || 0,
+                high: parseFloat(item.h) || 0,
+                low: parseFloat(item.l) || 0,
+                volume: parseInt(item.v, 10) || 0,
+                yesterdayPrice: isNaN(yesterdayPrice) ? 0 : yesterdayPrice,
             };
         });
 
@@ -96,7 +104,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
     for (let i = 0; i < 36; i++) {
         dates.push(new Date(today.getFullYear(), today.getMonth() - i, 1));
     }
-    
+
     // Define the different data sources and their properties.
     const sources = {
         TSE: {
@@ -147,7 +155,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
                     }
                 }
             }
-            
+
             if (combinedData.length > 0) {
                 rawData = combinedData;
                 break; // Found data, stop searching.
@@ -155,7 +163,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
                 sourceKey = null; // Reset if no data found.
             }
         }
-        
+
         if (rawData.length === 0 || !sourceKey) {
             throw new Error('No historical data found from TSE, OTC, or Emerging sources.');
         }
@@ -167,7 +175,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
                     const date = item[0]?.trim();
                     const closePriceStr = item[closePriceIndex];
                     if (date && typeof closePriceStr === 'string') {
-                         return {
+                        return {
                             date: date,
                             close: parseFloat(closePriceStr.trim().replace(/,/g, '')),
                         };
@@ -183,7 +191,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
 
         // De-duplicate and sort the data.
         const uniquePoints = Array.from(new Map(historicalPoints.map(p => [p.date, p])).values());
-        
+
         uniquePoints.sort((a, b) => {
             // Dates are in ROC format (e.g., "113/05/22").
             const dateA = new Date(a.date.replace(/(\d+)\/(\d+)\/(\d+)/, (_, y, m, d) => `${parseInt(y) + 1911}-${m}-${d}`));
@@ -197,7 +205,7 @@ export const fetchHistoricalData = async (code: string): Promise<HistoricalDataP
     } catch (error) {
         console.error(`Failed to fetch or parse historical data for ${code}:`, error);
         if (error instanceof Error && error.message.includes('No historical data found')) {
-             throw new Error("無法從上市、上櫃或興櫃市場獲取此股票的歷史股價資料。");
+            throw new Error("無法從上市、上櫃或興櫃市場獲取此股票的歷史股價資料。");
         }
         throw new Error("無法獲取歷史股價資料。");
     }
