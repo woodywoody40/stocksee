@@ -44,7 +44,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
         }
         setActiveSuggestionIndex(-1);
     }, [input, stockList]);
-    
+
     const handleSearch = (term: string) => {
         onSearch(term);
         setInput(term);
@@ -65,7 +65,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
     const handleSuggestionClick = (stock: StockListItem) => {
         handleSearch(stock.name);
     };
-    
+
     const handleClearInput = () => {
         setInput('');
         onSearch('');
@@ -83,7 +83,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
             setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : 0));
         }
     };
-    
+
     // Close suggestions when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -131,16 +131,16 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                     autoComplete="off"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
-                   {input && (
-                       <button
-                           type="button"
-                           onClick={handleClearInput}
-                           className="p-2 text-secondary-light dark:text-secondary-dark hover:text-on-surface-light dark:hover:text-on-surface-dark transition-colors rounded-full mr-1"
-                           aria-label="清除搜尋"
-                       >
-                           <CloseIcon className="w-5 h-5"/>
-                       </button>
-                   )}
+                    {input && (
+                        <button
+                            type="button"
+                            onClick={handleClearInput}
+                            className="p-2 text-secondary-light dark:text-secondary-dark hover:text-on-surface-light dark:hover:text-on-surface-dark transition-colors rounded-full mr-1"
+                            aria-label="清除搜尋"
+                        >
+                            <CloseIcon className="w-5 h-5" />
+                        </button>
+                    )}
                     <button
                         type="submit"
                         className="h-[calc(100%-0.75rem)] my-1.5 mr-1.5 px-5 bg-primary hover:bg-primary/90 text-on-primary rounded-lg text-sm font-semibold transition-colors transform hover:scale-105"
@@ -151,16 +151,15 @@ const SearchBar: React.FC<SearchBarProps> = ({ stockList, onSearch }) => {
                 </div>
 
                 {showSuggestions && suggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full mt-2 bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-xl shadow-xl overflow-hidden animate-fade-in">
+                    <ul className="absolute z-50 w-full mt-2 bg-surface-light dark:bg-surface-dark border border-outline-light dark:border-outline-dark rounded-xl shadow-xl overflow-hidden animate-fade-in max-h-96 overflow-y-auto">
                         {suggestions.map((stock, index) => (
                             <li
                                 key={stock.code}
                                 onClick={() => handleSuggestionClick(stock)}
-                                className={`px-4 py-3 cursor-pointer text-left transition-colors ${
-                                    index === activeSuggestionIndex 
-                                    ? 'bg-primary/10' 
-                                    : 'hover:bg-gray-100 dark:hover:bg-white/5'
-                                }`}
+                                className={`px-4 py-3 cursor-pointer text-left transition-colors ${index === activeSuggestionIndex
+                                        ? 'bg-primary/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                    }`}
                             >
                                 <div className="font-semibold text-on-surface-light dark:text-on-surface-dark">
                                     {highlightMatch(stock.name)}
